@@ -1,12 +1,22 @@
 // __tests__/routing.test.jsx — Smoke tests for the React Router setup
 // We render the App at known URLs and check that the right page shows.
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import HomePage from '../pages/HomePage.jsx'
 import BoardPage from '../pages/BoardPage.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
+import { useBoardStore } from '../store/useBoardStore.js'
+
+// Reset the store before each test so no state leaks between tests
+beforeEach(() => {
+  useBoardStore.setState({
+    board: null,
+    isLoading: false,
+    error: null,
+  })
+})
 
 // Helper: build a memory router at a given initial path
 const renderAt = (path) => {
@@ -22,15 +32,26 @@ const renderAt = (path) => {
 }
 
 describe('routing', () => {
-  it('renders HomePage at /', () => {
+  it('renders HomePage at /', async () => {
     renderAt('/')
-    expect(screen.getByText(/loading board/i)).toBeInTheDocument()
+    expect(await screen.findByText(/loading board/i)).toBeInTheDocument()
   })
 
-  it('renders BoardPage at /board/:boardId and reads the id from params', () => {
+  it('renders BoardPage at /board/:boardId when board is loaded', () => {
+    // Pre-populate the store so BoardPage doesn't try to fetch
+    useBoardStore.setState({
+      board: {
+        _id: 'abc-123',
+        name: 'Test Board',
+        description: '',
+        statuses: ['A', 'B'],
+        tasks: [
+          { _id: 't1', name: 'T1', description: '', icon: '⏰', status: 'A' },
+        ],
+      },
+    })
     renderAt('/board/abc-123')
-    expect(screen.getByText('Board')).toBeInTheDocument()
-    expect(screen.getByText('ID: abc-123')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Test Board')).toBeInTheDocument()
   })
 
   it('renders NotFoundPage for unknown paths', () => {
@@ -41,16 +62,14 @@ describe('routing', () => {
 })
 
 describe('Zustand store skeleton', () => {
-  it('starts with empty state', async () => {
-    const { useBoardStore } = await import('../store/useBoardStore.js')
+  it('starts with empty state', () => {
     const state = useBoardStore.getState()
     expect(state.board).toBeNull()
     expect(state.isLoading).toBe(false)
     expect(state.error).toBeNull()
   })
 
-  it('exposes the expected actions', async () => {
-    const { useBoardStore } = await import('../store/useBoardStore.js')
+  it('exposes the expected actions', () => {
     const state = useBoardStore.getState()
     expect(typeof state.fetchBoard).toBe('function')
     expect(typeof state.createBoard).toBe('function')
