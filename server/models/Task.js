@@ -1,5 +1,6 @@
 // Task model — a single task on a board.
-// Status must be one of three values matching the board's columns.
+// Status is a free string, but the API layer enforces that it must be
+// one of the values in the parent board's `statuses` array.
 
 import mongoose from 'mongoose'
 
@@ -22,11 +23,11 @@ const taskSchema = new mongoose.Schema({
     default: '⏰',
     maxlength: 10,
   },
-  // Enum enforces the three allowed column values at the DB layer.
-  // The API layer also validates for clearer error messages.
+  // Free-form string. The enum was removed (see ADR-0007) so users can
+  // define their own column names per board. The API layer validates
+  // the value against the parent board's `statuses` array.
   status: {
     type: String,
-    enum: ['In Progress', 'Completed', "Won't do"],
     default: 'In Progress',
   },
 }, {

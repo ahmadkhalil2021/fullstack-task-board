@@ -205,7 +205,7 @@ All fields optional. Only provided fields are updated.
 }
 ```
 
-**Valid status values**: `"In Progress"`, `"Completed"`, `"Won't do"`
+**Valid `status` values**: any string in the parent board's `statuses` array. The API loads the board, looks up the task, and validates the new `status` against `board.statuses`. If the status is not in the list, returns `400 VALIDATION_ERROR`.
 
 ---
 

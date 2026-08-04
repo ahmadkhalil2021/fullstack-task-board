@@ -16,6 +16,14 @@ const boardSchema = new mongoose.Schema({
     maxlength: 500,
     trim: true
   },
+  statuses: {
+    type: [String],
+    default: ['In Progress', 'Completed', "Won't do"],
+    validate: {
+      validator: (arr) => arr.length >= 1 && arr.every(s => s.trim().length > 0),
+      message: 'statuses must be a non-empty array of non-empty strings'
+    }
+  },
   tasks: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Task'
@@ -33,6 +41,9 @@ const boardSchema = new mongoose.Schema({
   ```
   board.deleteOne() → deleteMany({ _id: { $in: board.tasks } })
   ```
+
+### Statuses (board-level)
+Each board defines its own list of allowed statuses. Tasks reference the status by name (string). The default board gets `['In Progress', 'Completed', "Won't do"]`, but users can rename, add, or remove them per board (UI in a future issue).
 
 ## Task
 
@@ -57,7 +68,6 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['In Progress', 'Completed', "Won't do"],
     default: 'In Progress'
   }
 }, {
@@ -66,23 +76,33 @@ const taskSchema = new mongoose.Schema({
 ```
 
 ### Validations
-- `status` — enum validation at Mongoose level. Backed by API-level check for user-friendly errors.
+- `status` is a free string. **Validation against the parent board's `statuses` array happens in the API layer**, not in the schema. This is because Mongoose can't easily reference values from a related document during validation.
 
 ### Indexes
 - `_id` — automatic, used for PUT/DELETE `/api/tasks/:taskId`
 
 ## Default Tasks (Created with Board)
 
-When `POST /api/boards` is called, 3 tasks are created:
+When `POST /api/boards` is called, one task is created per status in `board.statuses`. The default board has 3 statuses, so 3 tasks:
+
 ```
-Task 1: { name: 'Task in Progress', status: 'In Progress', icon: '⏰' }
-Task 2: { name: 'Task Completed',   status: 'Completed',   icon: '🏋️' }
-Task 3: { name: "Task Won't Do",   status: "Won't do",    icon: '☕' }
+board.statuses = ['In Progress', 'Completed', "Won't do"]
+  → Task 1: { name: 'Task in Progress', status: 'In Progress', icon: '⏰' }
+  → Task 2: { name: 'Task Completed',   status: 'Completed',   icon: '🏋️' }
+  → Task 3: { name: "Task Won't Do",   status: "Won't do",    icon: '☕' }
+```
+
+If a user customizes `board.statuses` to `['Backlog', 'This Week', 'Done']`, the default tasks become:
+
+```
+  → Task 1: { name: 'Task Backlog',    status: 'Backlog',    icon: '⏰' }
+  → Task 2: { name: 'Task This Week',  status: 'This Week',  icon: '🏋️' }
+  → Task 3: { name: 'Task Done',       status: 'Done',       icon: '☕' }
 ```
 
 New tasks added via UI default to:
 ```
-{ name: 'New Task', status: 'In Progress', icon: '⏰' }
+{ name: 'New Task', status: board.statuses[0], icon: '⏰' }
 ```
 
 ## Delete Flow
