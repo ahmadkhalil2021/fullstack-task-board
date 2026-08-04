@@ -19,9 +19,10 @@ const boardSchema = new mongoose.Schema({
   // User-defined column names. Each task's `status` must be one of these strings.
   // The API layer validates this (Mongoose can't, because the allowed values
   // live in the parent document, not the task schema).
+  // Defaults match the project's Kanban workflow stages.
   statuses: {
     type: [String],
-    default: ['In Progress', 'Completed', "Won't do"],
+    default: ['Backlog', 'Ready', 'In progress', 'In review', 'Done'],
     validate: {
       validator: (arr) => Array.isArray(arr) && arr.length >= 1 && arr.every((s) => typeof s === 'string' && s.trim().length > 0),
       message: 'statuses must be a non-empty array of non-empty strings',

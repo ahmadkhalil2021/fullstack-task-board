@@ -18,7 +18,7 @@ const boardSchema = new mongoose.Schema({
   },
   statuses: {
     type: [String],
-    default: ['In Progress', 'Completed', "Won't do"],
+    default: ['Backlog', 'Ready', 'In progress', 'In review', 'Done'],
     validate: {
       validator: (arr) => arr.length >= 1 && arr.every(s => s.trim().length > 0),
       message: 'statuses must be a non-empty array of non-empty strings'
@@ -68,7 +68,7 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    default: 'In Progress'
+    default: 'In progress'
   }
 }, {
   timestamps: true
@@ -83,21 +83,23 @@ const taskSchema = new mongoose.Schema({
 
 ## Default Tasks (Created with Board)
 
-When `POST /api/boards` is called, one task is created per status in `board.statuses`. The default board has 3 statuses, so 3 tasks:
+When `POST /api/boards` is called, one task is created per status in `board.statuses`. The default board has 5 statuses, so 5 tasks:
 
 ```
-board.statuses = ['In Progress', 'Completed', "Won't do"]
-  → Task 1: { name: 'Task in Progress', status: 'In Progress', icon: '⏰' }
-  → Task 2: { name: 'Task Completed',   status: 'Completed',   icon: '🏋️' }
-  → Task 3: { name: "Task Won't Do",   status: "Won't do",    icon: '☕' }
+board.statuses = ['Backlog', 'Ready', 'In progress', 'In review', 'Done']
+  → Task 1: { name: 'Task Backlog',     status: 'Backlog',     icon: '⏰' }
+  → Task 2: { name: 'Task Ready',       status: 'Ready',       icon: '⏰' }
+  → Task 3: { name: 'Task In progress', status: 'In progress', icon: '⏰' }
+  → Task 4: { name: 'Task In review',   status: 'In review',   icon: '⏰' }
+  → Task 5: { name: 'Task Done',        status: 'Done',        icon: '⏰' }
 ```
 
 If a user customizes `board.statuses` to `['Backlog', 'This Week', 'Done']`, the default tasks become:
 
 ```
   → Task 1: { name: 'Task Backlog',    status: 'Backlog',    icon: '⏰' }
-  → Task 2: { name: 'Task This Week',  status: 'This Week',  icon: '🏋️' }
-  → Task 3: { name: 'Task Done',       status: 'Done',       icon: '☕' }
+  → Task 2: { name: 'Task This Week',  status: 'This Week',  icon: '⏰' }
+  → Task 3: { name: 'Task Done',       status: 'Done',       icon: '⏰' }
 ```
 
 New tasks added via UI default to:

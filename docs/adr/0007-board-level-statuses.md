@@ -8,13 +8,15 @@
 
 ## Context
 
-Originally, task status was a fixed enum: `['In Progress', 'Completed', "Won't do"]`. This is too rigid — different teams and projects want different workflows. A marketing team might use `['Ideas', 'Writing', 'Published']`. A dev team might use `['Backlog', 'This Week', 'In Review', 'Done']`.
+Originally, task status was a fixed enum: `['In Progress', 'Completed', "Won't do"]`. This is too rigid — different teams and projects want different workflows. A marketing team might use `['Ideas', 'Writing', 'Published']`. A dev team might use `['Backlog', 'This Week', 'Done']`.
+
+The new default is `['Backlog', 'Ready', 'In progress', 'In review', 'Done']` — matching the project's own Kanban workflow stages.
 
 We need a flexible system where each board can define its own statuses.
 
 ## Decision
 
-**Statuses are now defined per board.** Each `Board` has a `statuses: [String]` array. Each `Task.status` is a free string, but the API layer validates that the value exists in the parent board's `statuses` array.
+**Statuses are now defined per board.** Each `Board` has a `statuses: [String]` array. Each `Task.status` is a free string, but the API layer validates that the value exists in the parent board's `statuses` array. The default for new boards is `['Backlog', 'Ready', 'In progress', 'In review', 'Done']`.
 
 ## Rationale
 

@@ -108,6 +108,7 @@ All fields optional. Defaults applied if missing.
       "_id": "64b2f1a...",
       "name": "My Task Board",
       "description": "",
+      "statuses": ["Backlog", "Ready", "In progress", "In review", "Done"],
       "tasks": [ ... ],
       "createdAt": "2026-08-04T...",
       "updatedAt": "2026-08-04T..."
