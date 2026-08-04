@@ -1,9 +1,32 @@
 {
+  // vercel.json — Vercel deploy config for this monorepo
+  // Vercel supports JSON-with-comments (jsonc) in this file.
+
+  // Vercel platform version. v2 is the current spec.
   "version": 2,
+
+  // Build command: install client deps and run Vite production build.
+  // The server doesn't need a build step (Vercel bundles it as a serverless function).
   "buildCommand": "cd client && npm install && npm run build",
+
+  // Where the static frontend lives after build. Vercel serves these files via CDN.
   "outputDirectory": "client/dist",
+
+  // Rewrites control which request goes where.
+  // Order matters — first match wins.
   "rewrites": [
+    // Rule 1: API routes go to the Express serverless function.
+    // The capture group (.*) + $1 is a no-op on the path; it just tells Vercel
+    // "this is a function call, not a static file request."
     { "source": "/api/(.*)", "destination": "/api/$1" },
+
+    // Rule 2: Every non-API path serves the React app's index.html.
+    // This is what makes client-side routing work — when a user visits
+    // /board/abc123 directly, Vercel would 404 without this rule, because
+    // there's no board/abc123.html file. By serving index.html, React Router
+    // takes over and renders the right page.
+    // The (?!api) negative lookahead makes sure API routes are NOT caught here
+    // (otherwise the React app would receive /api/boards/123 instead of Express).
     { "source": "/((?!api).*)", "destination": "/index.html" }
   ]
 }
