@@ -14,9 +14,10 @@
 | Deployment | Vercel (both client & server) |
 
 ## File Rules
-- **ALWAYS add comments** that explain what the code does and why
-  - Comments should teach the reader — explain patterns, reasoning, and trade-offs
-  - Senior learning goal: every file should be readable to a junior dev
+- **Add comments sparingly — only the WHY, not the WHAT**
+  - Good comment: explains a non-obvious choice, a trade-off, or a gotcha
+  - Bad comment: restates the code (e.g. `// loop through items` above a `for` loop)
+  - One short comment per non-obvious block is usually enough
 - **NEVER create README or .md files** unless explicitly asked (AGENTS.md is already created)
 - Follow existing patterns in the codebase — mimic imports, naming, structure
 - Use `const` for function components, never `function` keyword
