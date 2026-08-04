@@ -96,13 +96,9 @@ cd server && npm run dev
 4. **No prop drilling**: Components read directly from Zustand store
 5. **Serverless-ready**: Express app exports `app` (not `app.listen`) for Vercel
 
-## Common Tasks
-
-### Adding a new API endpoint
-1. Add route in `server/routes/` 
-2. Mount in `server/index.js`
-3. Add fetcher in `client/src/lib/api.js`
-4. Add action in `client/src/store/useBoardStore.js`
+## Workflow Rules
+- **Never close an issue before the user reviews it.** After completing work, move the issue to **In review** on the kanban board and wait for explicit user approval before closing.
+- The flow is: Backlog → Ready → In progress → **In review** → (user approves) → Done
 
 ### Adding a new component
 1. Create in `client/src/components/`
