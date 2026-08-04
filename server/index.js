@@ -7,6 +7,7 @@
 import express from 'express'
 import cors from 'cors'
 import boardsRouter from './routes/boards.js'
+import tasksRouter from './routes/tasks.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
@@ -26,6 +27,7 @@ app.get('/api/health', (req, res) => {
 
 // Resource routes
 app.use('/api/boards', boardsRouter)
+app.use('/api/tasks', tasksRouter)
 
 // Error handler — must be last so it catches errors from all routes above
 app.use(errorHandler)
