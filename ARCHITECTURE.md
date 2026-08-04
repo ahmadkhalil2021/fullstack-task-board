@@ -3,18 +3,26 @@
 ## Overview
 
 ```
-┌──────────────┐       HTTP/REST        ┌──────────────┐       Mongoose       ┌──────────────┐
-│   React App  │ ◄────────────────────► │  Express API │ ◄──────────────────► │   MongoDB    │
-│  (Vercel)    │    /api/boards/*       │  (Vercel)    │    MONGODB_URI       │  (Atlas)     │
-│              │    /api/tasks/*        │              │                      │              │
-└──────┬───────┘                        └──────────────┘                      └──────────────┘
-       │
-       ▼
-┌──────────────┐
-│   Zustand    │
-│    Store     │
-└──────────────┘
+┌─────────────────────┐         ┌─────────────────────┐         ┌─────────────────────┐
+│      BROWSER        │         │       SERVER        │         │      DATABASE       │
+│  ┌───────────────┐  │  HTTPS  │  ┌───────────────┐  │ Mongoose│  ┌───────────────┐  │
+│  │ React + Vite  │  │  JSON   │  │ Express API   │  │         │  │ MongoDB Atlas │  │
+│  │ + Tailwind    │  │         │  │ /api/boards   │  │         │  │  boards       │  │
+│  │ + Zustand     │──┼─────────┼─►│ /api/tasks    │──┼─────────┼─►│  tasks        │  │
+│  │               │◄─┼─────────┼──│               │◄─┼─────────┼──│               │  │
+│  └───────────────┘  │         │  └───────────────┘  │         │  └───────────────┘  │
+│   Vercel CDN        │         │   Vercel serverless │         │   Atlas cluster     │
+└─────────────────────┘         └─────────────────────┘         └─────────────────────┘
 ```
+
+**What lives where:**
+- **Browser (Vercel CDN)**: React UI + Tailwind styles + Zustand store. The Zustand store holds the entire board state, including all its tasks.
+- **Server (Vercel serverless function)**: Express app exposing `/api/boards/*` and `/api/tasks/*`. Stateless — no data lives here between requests.
+- **Database (MongoDB Atlas)**: Two collections — `boards` and `tasks`. The `Board` document holds an array of references to its `Task` documents (see `docs/database-schema.md`).
+
+**Data formats on the wire:**
+- Browser ↔ Server: JSON over HTTPS
+- Server ↔ Database: Mongoose handles BSON (binary JSON) — invisible to our code
 
 ## Data Models
 
