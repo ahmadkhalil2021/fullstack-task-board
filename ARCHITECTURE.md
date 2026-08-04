@@ -124,6 +124,17 @@ User Action → Zustand Action → Optimistic Store Update → API Call → Merg
 - Optimistic updates: UI updates first, API syncs second
 - Error state is surfaced for rollback
 
+## The Flux Pattern
+
+The app uses the **Flux architecture**:
+- **UI** (React components) reads state from the store and calls store actions
+- **Store** (`useBoardStore`) holds the data and calls the API
+- **API** (`lib/api.js`) does the network calls
+
+**The rule**: UI knows the Store. Store knows the API. UI never knows the API.
+
+See `docs/state-management.md` for the practical guide and `docs/adr/0008-flux-architecture.md` for the decision record.
+
 ## Key Design Decisions
 
 | Decision | Rationale |

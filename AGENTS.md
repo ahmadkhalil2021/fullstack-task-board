@@ -96,6 +96,7 @@ cd server && npm run dev
 3. **Single source of truth**: Board state lives in Zustand store
 4. **No prop drilling**: Components read directly from Zustand store
 5. **Serverless-ready**: Express app exports `app` (not `app.listen`) for Vercel
+6. **Flux pattern**: UI knows the Store, Store knows the API, UI never knows the API. See `docs/state-management.md` and `docs/adr/0008-flux-architecture.md`.
 
 ## Workflow Rules
 - **Never close an issue before the user reviews it.** After completing work, move the issue to **In review** on the kanban board and wait for explicit user approval before closing.
@@ -105,6 +106,7 @@ cd server && npm run dev
 1. Create in `client/src/components/`
 2. Import Zustand store directly (no prop passing from parent)
 3. Use Tailwind for all styling
+4. Never call `api.js` or `fetch` directly from a component — go through the store
 
 ### Working with MongoDB
 - Connect once in `server/db.js`, reuse connection
