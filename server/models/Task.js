@@ -28,7 +28,7 @@ const taskSchema = new mongoose.Schema({
   // the value against the parent board's `statuses` array.
   status: {
     type: String,
-    default: 'In progress',
+    default: 'Backlog',
   },
 }, {
   // Adds createdAt + updatedAt automatically
