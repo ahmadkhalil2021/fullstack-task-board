@@ -1,0 +1,8 @@
+/* Tailwind CSS — three directives are required for Tailwind to work */
+/* @tailwind base: applies Tailwind's preflight (CSS reset) */
+/* @tailwind components: registers Tailwind's component classes */
+/* @tailwind utilities: generates all utility classes used in the project */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
