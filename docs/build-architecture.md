@@ -2,6 +2,8 @@
 
 A visual guide to how the backend and frontend are organized, built, and how they communicate at runtime. Diagrams are written in [Mermaid](https://mermaid.js.org/) and render natively in GitHub and VS Code.
 
+**Note on colors**: Diagrams use medium-tone backgrounds that work in both GitHub light and dark modes. We don't force text color, so Mermaid's theme handles it automatically.
+
 ---
 
 ## 1. Project Structure
@@ -32,10 +34,14 @@ graph TD
     Docs --> Adr[adr/<br/>decision records]
     Docs --> Refs[api-contract.md<br/>database-schema.md<br/>error-handling.md<br/>route-design.md<br/>state-management.md]
 
-    style Root fill:#1f2937,color:#fff
-    style Client fill:#3b82f6,color:#fff
-    style Server fill:#10b981,color:#fff
-    style Docs fill:#f59e0b,color:#fff
+    classDef default fill:#e5e7eb,stroke:#6b7280
+    classDef client fill:#bfdbfe,stroke:#3b82f6
+    classDef server fill:#bbf7d0,stroke:#10b981
+    classDef docs fill:#fde68a,stroke:#f59e0b
+
+    class Client,CComp,CPage,CStore,CLib,CTest,CConfig client
+    class Server,SModels,SRoutes,SMid,SLib,STest,SEntry server
+    class Docs,Adr,Refs docs
 ```
 
 ---
@@ -44,19 +50,19 @@ graph TD
 
 ```mermaid
 graph TB
-    subgraph Browser["🌐 BROWSER (Vercel CDN)"]
+    subgraph Browser["BROWSER (Vercel CDN)"]
         direction TB
-        React["React App<br/>(Vite bundle)"]
+        React["React App (Vite bundle)"]
         Components["Components<br/>BoardHeader, Column, TaskCard"]
-        Store["useBoardStore<br/>(Zustand)"]
-        ApiLayer["api.js<br/>(fetch wrappers)"]
+        Store["useBoardStore (Zustand)"]
+        ApiLayer["api.js (fetch wrappers)"]
         React --> Components
         Components -. reads .-> Store
         Components -. calls .-> Store
         Store -. calls .-> ApiLayer
     end
 
-    subgraph Server["⚙️ SERVER (Vercel Serverless)"]
+    subgraph Server["SERVER (Vercel Serverless)"]
         direction TB
         Express["Express App"]
         Middlewares["CORS · JSON · errorHandler"]
@@ -67,16 +73,20 @@ graph TB
         Routes --> Models
     end
 
-    subgraph Database["🗄️ DATABASE"]
+    subgraph Database["DATABASE"]
         MongoDB[("MongoDB Atlas<br/>boards, tasks")]
     end
 
     ApiLayer == "HTTPS / JSON" ==> Express
     Models == "Mongoose / BSON" ==> MongoDB
 
-    style Browser fill:#dbeafe,stroke:#3b82f6
-    style Server fill:#d1fae5,stroke:#10b981
-    style Database fill:#fef3c7,stroke:#f59e0b
+    classDef browserStyle fill:#bfdbfe,stroke:#3b82f6
+    classDef serverStyle fill:#bbf7d0,stroke:#10b981
+    classDef dbStyle fill:#fde68a,stroke:#f59e0b
+
+    class Browser,React,Components,Store,ApiLayer browserStyle
+    class Server,Express,Middleware,Middlewares,Routes,Models serverStyle
+    class Database,MongoDB dbStyle
 ```
 
 ---
@@ -95,9 +105,12 @@ flowchart LR
     D --> G[Edit .js file]
     G --> H[Manual restart<br/>or --watch]
 
-    style A fill:#1f2937,color:#fff
-    style F fill:#d1fae5
-    style H fill:#fef3c7
+    classDef inputNode fill:#e0e7ff,stroke:#6366f1
+    classDef outputNode fill:#d1fae5,stroke:#10b981
+    classDef warnNode fill:#fef3c7,stroke:#f59e0b
+    class A inputNode
+    class F outputNode
+    class H warnNode
 ```
 
 ### 3b. Production Build (`npm run build`)
@@ -109,10 +122,12 @@ flowchart LR
     B --> D["client/dist/assets/<br/>index-XXX.css<br/>index-XXX.js"]
     E["server/index.js<br/>(no build needed)"] -.used as-is.-> F[Node.js runs it]
 
-    style A fill:#1f2937,color:#fff
-    style C fill:#dbeafe
-    style D fill:#dbeafe
-    style F fill:#d1fae5
+    classDef inputNode fill:#e0e7ff,stroke:#6366f1
+    classDef clientNode fill:#bfdbfe,stroke:#3b82f6
+    classDef serverNode fill:#bbf7d0,stroke:#10b981
+    class A inputNode
+    class C,D clientNode
+    class F serverNode
 ```
 
 ### 3c. Deployment (Vercel)
@@ -131,9 +146,12 @@ flowchart TD
     I --> J[HTML+JS loads]
     I --> K["/api/* calls hit<br/>the serverless function"]
 
-    style A fill:#1f2937,color:#fff
-    style H fill:#dbeafe
-    style K fill:#d1fae5
+    classDef inputNode fill:#e0e7ff,stroke:#6366f1
+    classDef clientNode fill:#bfdbfe,stroke:#3b82f6
+    classDef serverNode fill:#bbf7d0,stroke:#10b981
+    class A inputNode
+    class F,J clientNode
+    class G,K serverNode
 ```
 
 ---
@@ -146,16 +164,16 @@ This is the most important diagram. It shows how a single user action flows thro
 sequenceDiagram
     autonumber
     actor User
-    participant UI as TaskCard<br/>(React)
-    participant Store as useBoardStore<br/>(Zustand)
-    participant API as api.js<br/>(fetch)
-    participant Server as Express<br/>Route
+    participant UI as TaskCard
+    participant Store as Zustand
+    participant API as api.js
+    participant Server as Express
     participant DB as MongoDB
 
     User->>UI: Types new name & clicks Save
     UI->>Store: updateTask(id, { name })
 
-    Note over Store,UI: ⚡ OPTIMISTIC UPDATE<br/>Store changes state NOW
+    Note over Store,UI: OPTIMISTIC UPDATE
     Store->>UI: re-render with new name
     User-->>User: Sees new name instantly
 
@@ -166,16 +184,15 @@ sequenceDiagram
     Server-->>API: 200 + task JSON
     API-->>Store: response arrives
 
-    alt ✅ Success
-        Note over Store: Server confirmed<br/>no change needed
-    else ❌ Failure
+    alt Success
+        Note over Store: Server confirmed
+    else Failure
         Store->>Store: ROLLBACK to previous state
         Store->>UI: re-render with old name
-        Store->>UI: show error toast
     end
 ```
 
-**Key insight**: Steps 3–6 happen *before* steps 7–11. The UI feels instant because we don't wait for the server. If the server fails, we roll back.
+**Key insight**: Steps 3–7 happen *before* steps 8–13. The UI feels instant because we don't wait for the server. If the server fails, we roll back.
 
 ---
 
@@ -183,24 +200,29 @@ sequenceDiagram
 
 ```mermaid
 graph LR
-    UI["🖼️ UI<br/>(React)"]
-    Store["📦 Store<br/>(Zustand)"]
-    API["🌐 API<br/>(fetch)"]
-    Server["⚙️ Server<br/>(Express)"]
+    UI["UI (React)"]
+    Store["Store (Zustand)"]
+    API["API (fetch)"]
+    Server["Server (Express)"]
 
     UI -- "reads state" --> Store
     UI -- "calls actions" --> Store
     Store -- "calls API" --> API
     API -- "HTTP" --> Server
 
-    UI -. "❌ never" .-> API
-    UI -. "❌ never" .-> Server
-    Store -. "❌ never" .-> Server
+    UI -. "forbidden" .-> API
+    UI -. "forbidden" .-> Server
+    Store -. "forbidden" .-> Server
 
-    style UI fill:#dbeafe,stroke:#3b82f6
-    style Store fill:#d1fae5,stroke:#10b981
-    style API fill:#fef3c7,stroke:#f59e0b
-    style Server fill:#fce7f3,stroke:#ec4899
+    classDef uiStyle fill:#bfdbfe,stroke:#3b82f6
+    classDef storeStyle fill:#bbf7d0,stroke:#10b981
+    classDef apiStyle fill:#fde68a,stroke:#f59e0b
+    classDef serverStyle fill:#fbcfe8,stroke:#ec4899
+
+    class UI uiStyle
+    class Store storeStyle
+    class API apiStyle
+    class Server serverStyle
 ```
 
 **The rule in one line:**
@@ -220,6 +242,19 @@ The dashed red lines show what is **forbidden**. Break this rule and the data fl
 | **API** | `client/src/lib/` | (network) | `fetch` | Store, React |
 | **Route** | `server/routes/` | Models | Model methods | Frontend, React |
 | **Model** | `server/models/` | (database) | Mongoose | HTTP, frontend |
+
+---
+
+## Why we use medium-tone colors
+
+| Background | Works in light mode? | Works in dark mode? |
+|------------|--------------------|---------------------|
+| `#1f2937` (very dark) + `color:#fff` | ✅ | ❌ (text invisible) |
+| `#bfdbfe` (light blue) — no forced color | ✅ | ✅ |
+| `#ffffff` (white) — no forced color | ❌ | ✅ |
+| `#bbf7d0` (light green) — no forced color | ✅ | ✅ |
+
+The light pastel backgrounds (`#bfdbfe`, `#bbf7d0`, `#fde68a`) have enough contrast with both default light text and dark text. Mermaid picks the right text color based on the theme.
 
 ---
 
