@@ -20,6 +20,7 @@ npm test         # runs client + server tests
 | The database models | [`docs/database-schema.md`](docs/database-schema.md) |
 | How errors are handled | [`docs/error-handling.md`](docs/error-handling.md) |
 | How routing works | [`docs/route-design.md`](docs/route-design.md) |
+| Build + runtime diagrams | [`docs/build-architecture.md`](docs/build-architecture.md) |
 | High-level system design | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | All architecture decisions | [`docs/adr/`](docs/adr/) |
 | Coding rules for AI assistants | [`AGENTS.md`](AGENTS.md) |
