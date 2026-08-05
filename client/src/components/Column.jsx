@@ -12,7 +12,7 @@ const Column = ({ status, tasks, onTaskClick }) => {
     <div
       ref={setNodeRef}
       data-status={status}
-      className={`flex flex-col rounded-lg p-3 min-w-[320px] flex-1 transition-colors ${
+      className={`flex flex-col rounded-lg p-3 min-w-[280px] flex-1 transition-colors ${
         isOver
           ? 'bg-blue-100 dark:bg-blue-900/30 ring-2 ring-blue-400'
           : 'bg-gray-100 dark:bg-gray-900'
