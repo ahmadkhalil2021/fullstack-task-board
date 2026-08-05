@@ -1,11 +1,31 @@
-// TaskCard.jsx — Read-only display of a single task
-// Clicking opens the TaskForm modal for editing (handled by the parent).
+// TaskCard.jsx — Draggable card for a single task
+// Click to open the edit modal. Drag to move to another column.
+// The activationConstraint (5px) ensures click vs drag is disambiguated.
+
+import { useDraggable } from '@dnd-kit/core'
 
 const TaskCard = ({ task, onClick }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task._id,
+  })
+
+  // Combine DnD listeners with the click handler.
+  // dnd-kit will only start a drag after the pointer moves 5px (configured in sensors),
+  // so a single click still triggers onClick.
+  const handleClick = (e) => {
+    if (!isDragging) onClick(task)
+  }
+
   return (
     <div
-      onClick={() => onClick(task)}
-      className="bg-white dark:bg-gray-800 rounded-md p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-pointer"
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={handleClick}
+      data-task-id={task._id}
+      className={`bg-white dark:bg-gray-800 rounded-md p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing touch-none ${
+        isDragging ? 'opacity-30' : ''
+      }`}
     >
       <div className="flex items-start gap-2">
         <span className="text-2xl" aria-hidden="true">{task.icon}</span>
