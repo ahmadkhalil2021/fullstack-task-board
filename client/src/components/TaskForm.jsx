@@ -1,17 +1,44 @@
 // TaskForm.jsx — Modal for editing a single task
 // Opens when a task is clicked. Edits all fields. Has Save, Cancel, and Delete.
+// The description textarea auto-grows to fit the content.
 
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '../store/useBoardStore.js'
 
 const ICONS = ['⏰', '🚀', '🎯', '⭐', '🏁', '✅', '❌', '🔥', '💡', '📌']
 
+// Auto-growing textarea: resizes its height to fit the content.
+// On every change, the scrollHeight is set as the new height so the
+// user always sees the full content without scrolling.
+const GrowingTextarea = ({ value, onChange, placeholder, minRows = 4 }) => {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // Reset to auto so the scrollHeight can be measured
+    el.style.height = 'auto'
+    // Set the height to the scrollHeight (content height)
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      rows={minRows}
+      placeholder={placeholder}
+      className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+    />
+  )
+}
+
 const TaskForm = ({ task, onClose }) => {
   const board = useBoardStore(s => s.board)
   const updateTask = useBoardStore(s => s.updateTask)
   const deleteTask = useBoardStore(s => s.deleteTask)
 
-  // Local drafts so the user can edit without immediately saving
   const [name, setName] = useState(task.name)
   const [description, setDescription] = useState(task.description)
   const [icon, setIcon] = useState(task.icon)
@@ -19,13 +46,11 @@ const TaskForm = ({ task, onClose }) => {
   const [isSaving, setIsSaving] = useState(false)
   const nameRef = useRef(null)
 
-  // Focus the name input when the form opens
   useEffect(() => {
     nameRef.current?.focus()
     nameRef.current?.select()
   }, [])
 
-  // Close on Escape
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') onClose()
@@ -71,7 +96,7 @@ const TaskForm = ({ task, onClose }) => {
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Edit task</h2>
 
         {/* Name */}
@@ -86,14 +111,14 @@ const TaskForm = ({ task, onClose }) => {
           />
         </label>
 
-        {/* Description */}
+        {/* Description — auto-growing textarea so the full text is visible */}
         <label className="block mb-3">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</span>
-          <textarea
+          <GrowingTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Add a description..."
+            minRows={4}
           />
         </label>
 
