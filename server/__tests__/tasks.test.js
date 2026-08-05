@@ -164,3 +164,40 @@ test('DELETE /api/tasks/:taskId does not delete the board', async () => {
   assert.equal(res.status, 200)
   assert.equal(res.body.data.board.tasks.length, 1)  // 1 task left
 })
+
+// --- POST /api/tasks ---
+
+test('POST /api/tasks creates a new task and links it to the board', async () => {
+  const board = await createBoardWithTasks(['A', 'B'])
+  const boardId = board._id
+
+  const res = await request(app).post('/api/tasks').send({
+    name: 'New task',
+    status: 'A',
+    parentBoardId: boardId,
+  })
+  assert.equal(res.status, 201)
+  assert.equal(res.body.data.task.name, 'New task')
+  assert.equal(res.body.data.task.status, 'A')
+
+  // Verify the task was added to the board
+  const getRes = await request(app).get(`/api/boards/${boardId}`)
+  assert.equal(getRes.body.data.board.tasks.length, 3)  // was 2, now 3
+})
+
+test('POST /api/tasks rejects status not in board.statuses', async () => {
+  const board = await createBoardWithTasks(['A', 'B'])
+  const res = await request(app).post('/api/tasks').send({
+    status: 'NotAllowed',
+    parentBoardId: board._id,
+  })
+  assert.equal(res.status, 400)
+  assert.equal(res.body.error.code, 'VALIDATION_ERROR')
+})
+
+test('POST /api/tasks rejects missing parentBoardId', async () => {
+  const res = await request(app).post('/api/tasks').send({
+    status: 'A',
+  })
+  assert.equal(res.status, 400)
+})

@@ -1,7 +1,7 @@
 // routes/tasks.js — Task resource endpoints
-// Implements PUT (update) and DELETE for individual tasks.
-// We don't have a POST /api/tasks — tasks are always created as part of
-// a board (see routes/boards.js POST handler).
+// Implements POST (create), PUT (update), and DELETE for individual tasks.
+// The board POST handler in routes/boards.js creates the initial tasks;
+// this POST is for the "Add new task" UI button (Issue #8).
 
 import express from 'express'
 import Task from '../models/Task.js'
@@ -9,6 +9,43 @@ import Board from '../models/Board.js'
 import { notFound, validationError } from '../lib/errors.js'
 
 const router = express.Router()
+
+// POST /api/tasks
+// Creates a new task and links it to its parent board.
+// The parent board is found by looking up which board contains a task
+// with the given parentBoardId in its tasks array.
+router.post('/', async (req, res, next) => {
+  try {
+    const { name, description, icon, status, parentBoardId } = req.body || {}
+
+    if (!parentBoardId) {
+      throw validationError('parentBoardId is required')
+    }
+    if (!status) {
+      throw validationError('status is required')
+    }
+
+    // Find the parent board and verify the status is in its allowed list
+    const board = await Board.findById(parentBoardId)
+    if (!board) throw notFound('Parent board not found')
+    if (!board.statuses.includes(status)) {
+      throw validationError(
+        `Status "${status}" is not in the board's allowed statuses: ${board.statuses.join(', ')}`
+      )
+    }
+
+    // Create the task
+    const task = await Task.create({ name, description, icon, status })
+
+    // Link the task to the board
+    board.tasks.push(task._id)
+    await board.save()
+
+    res.status(201).json({ data: { task } })
+  } catch (err) {
+    next(err)
+  }
+})
 
 // PUT /api/tasks/:taskId
 // Updates only the fields provided in the request body.
