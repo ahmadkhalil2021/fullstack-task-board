@@ -2,7 +2,7 @@
 
 A visual guide to how the backend and frontend are organized, built, and how they communicate at runtime. Diagrams are written in [Mermaid](https://mermaid.js.org/) and render natively in GitHub and VS Code.
 
-**Note on colors**: Diagrams use medium-tone backgrounds that work in both GitHub light and dark modes. We don't force text color, so Mermaid's theme handles it automatically.
+**Color rule**: All boxes use **dark backgrounds with white text**. This is the only combination that stays readable in both GitHub light and dark modes. Custom colors are set via `classDef` with both `fill` and `color` forced.
 
 ---
 
@@ -17,31 +17,35 @@ graph TD
 
     Client --> CSrc[src/]
     Client --> CConfig[vite.config.js<br/>tailwind.config.js<br/>vitest.config.js]
-
-    CSrc --> CComp[components/<br/>BoardHeader, Column, TaskCard]
-    CSrc --> CPage[pages/<br/>HomePage, BoardPage, NotFoundPage]
-    CSrc --> CStore[store/<br/>useBoardStore.js]
-    CSrc --> CLib[lib/<br/>api.js]
+    CSrc --> CComp[components/]
+    CSrc --> CPage[pages/]
+    CSrc --> CStore[store/]
+    CSrc --> CLib[lib/]
     CSrc --> CTest[__tests__/]
 
-    Server --> SModels[models/<br/>Board, Task]
-    Server --> SRoutes[routes/<br/>boards, tasks]
-    Server --> SMid[middleware/<br/>errorHandler]
-    Server --> SLib[lib/<br/>errors]
+    Server --> SModels[models/]
+    Server --> SRoutes[routes/]
+    Server --> SMid[middleware/]
+    Server --> SLib[lib/]
     Server --> STest[__tests__/]
     Server --> SEntry[index.js, dev.js, db.js]
 
-    Docs --> Adr[adr/<br/>decision records]
+    Docs --> Adr[adr/]
     Docs --> Refs[api-contract.md<br/>database-schema.md<br/>error-handling.md<br/>route-design.md<br/>state-management.md]
 
-    classDef default fill:#e5e7eb,stroke:#6b7280
-    classDef client fill:#bfdbfe,stroke:#3b82f6
-    classDef server fill:#bbf7d0,stroke:#10b981
-    classDef docs fill:#fde68a,stroke:#f59e0b
+    classDef rootNode fill:#1f2937,stroke:#000,color:#fff
+    classDef clientNode fill:#1e40af,stroke:#000,color:#fff
+    classDef serverNode fill:#065f46,stroke:#000,color:#fff
+    classDef docsNode fill:#92400e,stroke:#000,color:#fff
+    classDef leafNode fill:#374151,stroke:#000,color:#fff
 
-    class Client,CComp,CPage,CStore,CLib,CTest,CConfig client
-    class Server,SModels,SRoutes,SMid,SLib,STest,SEntry server
-    class Docs,Adr,Refs docs
+    class Root rootNode
+    class Client,CConfig clientNode
+    class CSrc,CComp,CPage,CStore,CLib,CTest leafNode
+    class Server serverNode
+    class SModels,SRoutes,SMid,SLib,STest,SEntry leafNode
+    class Docs,Adr,Refs docsNode
+    class Config leafNode
 ```
 
 ---
@@ -53,7 +57,7 @@ graph TB
     subgraph Browser["BROWSER (Vercel CDN)"]
         direction TB
         React["React App (Vite bundle)"]
-        Components["Components<br/>BoardHeader, Column, TaskCard"]
+        Components["Components"]
         Store["useBoardStore (Zustand)"]
         ApiLayer["api.js (fetch wrappers)"]
         React --> Components
@@ -65,9 +69,9 @@ graph TB
     subgraph Server["SERVER (Vercel Serverless)"]
         direction TB
         Express["Express App"]
-        Middlewares["CORS · JSON · errorHandler"]
-        Routes["/api/boards<br/>/api/tasks"]
-        Models["Board model<br/>Task model"]
+        Middlewares["CORS, JSON, errorHandler"]
+        Routes["/api/boards, /api/tasks"]
+        Models["Board model, Task model"]
         Express --> Middlewares
         Middlewares --> Routes
         Routes --> Models
@@ -80,12 +84,13 @@ graph TB
     ApiLayer == "HTTPS / JSON" ==> Express
     Models == "Mongoose / BSON" ==> MongoDB
 
-    classDef browserStyle fill:#bfdbfe,stroke:#3b82f6
-    classDef serverStyle fill:#bbf7d0,stroke:#10b981
-    classDef dbStyle fill:#fde68a,stroke:#f59e0b
+    classDef browserStyle fill:#1e40af,stroke:#000,color:#fff
+    classDef serverStyle fill:#065f46,stroke:#000,color:#fff
+    classDef dbStyle fill:#92400e,stroke:#000,color:#fff
+    classDef innerStyle fill:#374151,stroke:#000,color:#fff
 
     class Browser,React,Components,Store,ApiLayer browserStyle
-    class Server,Express,Middleware,Middlewares,Routes,Models serverStyle
+    class Server,Express,Middlewares,Routes,Models serverStyle
     class Database,MongoDB dbStyle
 ```
 
@@ -98,18 +103,19 @@ graph TB
 ```mermaid
 flowchart LR
     A[npm run dev] --> B[concurrently]
-    B --> C[Vite dev server<br/>:5173]
-    B --> D[node dev.js<br/>:5001]
+    B --> C[Vite dev server :5173]
+    B --> D[node dev.js :5001]
     C --> E[Edit .jsx file]
-    E --> F[HMR<br/>instant reload]
+    E --> F[HMR instant reload]
     D --> G[Edit .js file]
-    G --> H[Manual restart<br/>or --watch]
+    G --> H[Manual restart or --watch]
 
-    classDef inputNode fill:#e0e7ff,stroke:#6366f1
-    classDef outputNode fill:#d1fae5,stroke:#10b981
-    classDef warnNode fill:#fef3c7,stroke:#f59e0b
-    class A inputNode
-    class F outputNode
+    classDef inputNode fill:#4f46e5,stroke:#000,color:#fff
+    classDef okNode fill:#065f46,stroke:#000,color:#fff
+    classDef warnNode fill:#92400e,stroke:#000,color:#fff
+    class A,B inputNode
+    class C,D,E,G leafNode
+    class F okNode
     class H warnNode
 ```
 
@@ -117,17 +123,17 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[npm run build] --> B["vite build<br/>(client only)"]
-    B --> C["client/dist/<br/>index.html"]
-    B --> D["client/dist/assets/<br/>index-XXX.css<br/>index-XXX.js"]
-    E["server/index.js<br/>(no build needed)"] -.used as-is.-> F[Node.js runs it]
+    A[npm run build] --> B["vite build (client only)"]
+    B --> C["client/dist/index.html"]
+    B --> D["client/dist/assets/index.css, .js"]
+    E["server/index.js (no build)"] -.used as-is.-> F[Node.js runs it]
 
-    classDef inputNode fill:#e0e7ff,stroke:#6366f1
-    classDef clientNode fill:#bfdbfe,stroke:#3b82f6
-    classDef serverNode fill:#bbf7d0,stroke:#10b981
-    class A inputNode
+    classDef inputNode fill:#4f46e5,stroke:#000,color:#fff
+    classDef clientNode fill:#1e40af,stroke:#000,color:#fff
+    classDef serverNode fill:#065f46,stroke:#000,color:#fff
+    class A,B inputNode
     class C,D clientNode
-    class F serverNode
+    class E,F serverNode
 ```
 
 ### 3c. Deployment (Vercel)
@@ -136,29 +142,29 @@ flowchart LR
 flowchart TD
     A[git push to main] --> B[Vercel detects push]
     B --> C[Reads vercel.json]
-    C --> D[Builds frontend<br/>vite build]
-    C --> E[Bundles server<br/>as serverless function]
-    D --> F[Static files → CDN]
+    C --> D[Builds frontend vite build]
+    C --> E[Bundles server serverless function]
+    D --> F[Static files to CDN]
     E --> G[API function ready]
-    F --> H["https://yourapp.vercel.app"]
+    F --> H[yourapp.vercel.app]
     G --> H
     H --> I[User visits URL]
     I --> J[HTML+JS loads]
-    I --> K["/api/* calls hit<br/>the serverless function"]
+    I --> K["/api/* calls hit serverless function"]
 
-    classDef inputNode fill:#e0e7ff,stroke:#6366f1
-    classDef clientNode fill:#bfdbfe,stroke:#3b82f6
-    classDef serverNode fill:#bbf7d0,stroke:#10b981
-    class A inputNode
-    class F,J clientNode
-    class G,K serverNode
+    classDef inputNode fill:#4f46e5,stroke:#000,color:#fff
+    classDef clientNode fill:#1e40af,stroke:#000,color:#fff
+    classDef serverNode fill:#065f46,stroke:#000,color:#fff
+    class A,B,C inputNode
+    class D,F,J clientNode
+    class E,G,K serverNode
 ```
 
 ---
 
 ## 4. Request Flow (with Optimistic Update)
 
-This is the most important diagram. It shows how a single user action flows through the system — and how the UI updates **before** the server responds.
+The most important diagram. Shows how a single user action flows through the system, and how the UI updates **before** the server responds.
 
 ```mermaid
 sequenceDiagram
@@ -214,10 +220,10 @@ graph LR
     UI -. "forbidden" .-> Server
     Store -. "forbidden" .-> Server
 
-    classDef uiStyle fill:#bfdbfe,stroke:#3b82f6
-    classDef storeStyle fill:#bbf7d0,stroke:#10b981
-    classDef apiStyle fill:#fde68a,stroke:#f59e0b
-    classDef serverStyle fill:#fbcfe8,stroke:#ec4899
+    classDef uiStyle fill:#1e40af,stroke:#000,color:#fff
+    classDef storeStyle fill:#065f46,stroke:#000,color:#fff
+    classDef apiStyle fill:#92400e,stroke:#000,color:#fff
+    classDef serverStyle fill:#831843,stroke:#000,color:#fff
 
     class UI uiStyle
     class Store storeStyle
@@ -245,16 +251,15 @@ The dashed red lines show what is **forbidden**. Break this rule and the data fl
 
 ---
 
-## Why we use medium-tone colors
+## Why dark + white text everywhere
 
-| Background | Works in light mode? | Works in dark mode? |
-|------------|--------------------|---------------------|
-| `#1f2937` (very dark) + `color:#fff` | ✅ | ❌ (text invisible) |
-| `#bfdbfe` (light blue) — no forced color | ✅ | ✅ |
-| `#ffffff` (white) — no forced color | ❌ | ✅ |
-| `#bbf7d0` (light green) — no forced color | ✅ | ✅ |
+| Background | Text | Light mode | Dark mode |
+|------------|------|-----------|-----------|
+| `#1e40af` (dark blue) | `#fff` (white) | ✅ visible | ✅ visible |
+| `#bfdbfe` (light blue) | no color (theme default) | ✅ | ❌ white on light |
+| `#ffffff` (white) | no color | ❌ | ❌ |
 
-The light pastel backgrounds (`#bfdbfe`, `#bbf7d0`, `#fde68a`) have enough contrast with both default light text and dark text. Mermaid picks the right text color based on the theme.
+**Dark backgrounds with forced white text are the only combination that survives both themes.** GitHub's Mermaid renderer always picks the theme's default text color (white in dark mode, dark in light mode) when text color isn't forced. So we force it.
 
 ---
 
