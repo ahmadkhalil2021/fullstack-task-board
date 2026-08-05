@@ -1,12 +1,12 @@
 // BoardPage.jsx — Board view at "/board/:boardId"
-// Issue #6: renders the board with columns and tasks.
-// Fetches the board on mount if it's not already loaded.
+// Renders the board with columns and tasks. Click a task to open the edit form.
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useBoardStore } from '../store/useBoardStore.js'
 import BoardHeader from '../components/BoardHeader.jsx'
 import Column from '../components/Column.jsx'
+import TaskForm from '../components/TaskForm.jsx'
 import EmptyBoard from '../components/EmptyBoard.jsx'
 
 const BoardPage = () => {
@@ -16,8 +16,9 @@ const BoardPage = () => {
   const error = useBoardStore(s => s.error)
   const fetchBoard = useBoardStore(s => s.fetchBoard)
 
-  // Fetch the board on mount (or when the id changes)
-  // We check the current board id to avoid refetching on every render
+  // Track which task is being edited (null = no modal open)
+  const [editingTask, setEditingTask] = useState(null)
+
   useEffect(() => {
     if (board?._id !== boardId) {
       fetchBoard(boardId)
@@ -59,11 +60,16 @@ const BoardPage = () => {
                 key={status}
                 status={status}
                 tasks={board.tasks.filter((t) => t.status === status)}
+                onTaskClick={setEditingTask}
               />
             ))}
           </div>
         )}
       </main>
+
+      {editingTask && (
+        <TaskForm task={editingTask} onClose={() => setEditingTask(null)} />
+      )}
     </div>
   )
 }
