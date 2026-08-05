@@ -40,11 +40,13 @@ const TaskCard = ({ task, onClick }) => {
       <div className="flex items-start gap-2">
         <span className="text-2xl" aria-hidden="true">{task.icon}</span>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+          <h3 className="font-medium text-gray-900 dark:text-gray-100 break-words">
             {task.name}
           </h3>
           {task.description && (
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+            // whitespace-pre-wrap preserves line breaks the user typed in the modal
+            // text-sm keeps it visually smaller than the title
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words">
               {task.description}
             </p>
           )}
