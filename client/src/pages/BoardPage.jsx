@@ -1,6 +1,7 @@
 // BoardPage.jsx — Board view at "/board/:boardId"
-// Renders the board with columns and tasks. Click a task to open the edit form.
-// Drag a task to another column to change its status.
+// Click a task to open the edit modal. Drag a task to:
+// - Another column → change status
+// - Same column → reorder (with @dnd-kit/sortable)
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -13,6 +14,7 @@ import {
   closestCorners,
   DragOverlay,
 } from '@dnd-kit/core'
+import { SortableContext, sortableKeyboardCoordinates, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useBoardStore } from '../store/useBoardStore.js'
 import BoardHeader from '../components/BoardHeader.jsx'
 import Column from '../components/Column.jsx'
@@ -27,16 +29,14 @@ const BoardPage = () => {
   const error = useBoardStore(s => s.error)
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const updateTask = useBoardStore(s => s.updateTask)
+  const reorderTasksInColumn = useBoardStore(s => s.reorderTasksInColumn)
 
-  // Track which task is being edited (null = no modal open)
   const [editingTask, setEditingTask] = useState(null)
-  // Track which task is being dragged (for the drag overlay)
   const [draggingTask, setDraggingTask] = useState(null)
 
-  // Sensors: pointer (mouse + touch) and keyboard (accessibility)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
   useEffect(() => {
@@ -45,16 +45,15 @@ const BoardPage = () => {
     }
   }, [boardId, board?._id, fetchBoard])
 
-  // Find which column a task belongs to (used to find the source column on drag start)
+  // Find the column a task belongs to
   const findColumnOfTask = (taskId) => {
     if (!board) return null
     return board.tasks.find((t) => t._id === taskId)?.status
   }
 
-  // Find which column a point is over (for drop targets)
+  // Resolve the over.id (which could be a column name or a task id) to a column
   const findColumnFromOver = (overId) => {
     if (!board) return null
-    // The overId is either a column id (e.g. "Backlog") or a task id
     if (board.statuses.includes(overId)) return overId
     return findColumnOfTask(overId)
   }
@@ -67,14 +66,31 @@ const BoardPage = () => {
   const handleDragEnd = (event) => {
     setDraggingTask(null)
     const { active, over } = event
-    if (!over) return
+    if (!over || !board) return
 
     const sourceStatus = findColumnOfTask(active.id)
     const targetStatus = findColumnFromOver(over.id)
-    if (!sourceStatus || !targetStatus || sourceStatus === targetStatus) return
+    if (!sourceStatus || !targetStatus) return
 
-    // Optimistically move the task to the new column
-    updateTask(active.id, { status: targetStatus })
+    // Case 1: cross-column drag — change status
+    if (sourceStatus !== targetStatus) {
+      updateTask(active.id, { status: targetStatus })
+      return
+    }
+
+    // Case 2: same column — reorder
+    // Get the current sorted list of task IDs in this column
+    const sortedIds = board.tasks
+      .filter((t) => t.status === sourceStatus)
+      .sort((a, b) => a.order - b.order)
+      .map((t) => t._id)
+
+    const oldIndex = sortedIds.indexOf(active.id)
+    const newIndex = sortedIds.indexOf(over.id)
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+
+    const newSortedIds = arrayMove(sortedIds, oldIndex, newIndex)
+    reorderTasksInColumn(sourceStatus, newSortedIds)
   }
 
   if (isLoading) {
@@ -113,19 +129,28 @@ const BoardPage = () => {
             <EmptyBoard message="No columns defined for this board" />
           ) : (
             <div className="flex gap-4 h-full">
-              {board.statuses.map((status) => (
-                <Column
-                  key={status}
-                  status={status}
-                  tasks={board.tasks.filter((t) => t.status === status)}
-                  onTaskClick={setEditingTask}
-                />
-              ))}
+              {board.statuses.map((status) => {
+                const columnTasks = board.tasks
+                  .filter((t) => t.status === status)
+                  .sort((a, b) => a.order - b.order)
+                return (
+                  <SortableContext
+                    key={status}
+                    items={columnTasks.map((t) => t._id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <Column
+                      status={status}
+                      tasks={columnTasks}
+                      onTaskClick={setEditingTask}
+                    />
+                  </SortableContext>
+                )
+              })}
             </div>
           )}
         </main>
 
-        {/* The DragOverlay shows a floating card that follows the cursor while dragging */}
         <DragOverlay>
           {draggingTask ? <TaskCard task={draggingTask} /> : null}
         </DragOverlay>

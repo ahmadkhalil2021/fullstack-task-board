@@ -35,6 +35,10 @@ export const updateTask = (taskId, data) =>
   request(`/tasks/${taskId}`, { method: 'PUT', body: JSON.stringify(data) })
     .then((res) => res.data.task)
 
+export const updateTaskOrder = (taskId, order) =>
+  request(`/tasks/${taskId}/order`, { method: 'PUT', body: JSON.stringify({ order }) })
+    .then((res) => res.data.task)
+
 export const deleteTask = (taskId) =>
   request(`/tasks/${taskId}`, { method: 'DELETE' })
     .then((res) => res.data)

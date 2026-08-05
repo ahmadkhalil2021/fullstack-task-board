@@ -64,6 +64,67 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
+  // Update a task's order (used for reordering within a column).
+  // Optimistic: update the store immediately, sync to API, rollback on failure.
+  updateTaskOrder: async (taskId, newOrder) => {
+    const previousBoard = get().board
+    if (!previousBoard) return
+
+    // Apply the new order optimistically
+    set({
+      board: {
+        ...previousBoard,
+        tasks: previousBoard.tasks.map((t) =>
+          t._id === taskId ? { ...t, order: newOrder } : t
+        ),
+      },
+    })
+
+    try {
+      const task = await api.updateTaskOrder(taskId, newOrder)
+      set({
+        board: {
+          ...get().board,
+          tasks: get().board.tasks.map((t) => (t._id === taskId ? task : t)),
+        },
+      })
+    } catch (err) {
+      set({ board: previousBoard, error: err.message })
+      throw err
+    }
+  },
+
+  // Reorder tasks in a column by providing the new order of task IDs.
+  // This is a more efficient way to reorder when moving a task within a column.
+  reorderTasksInColumn: async (status, newTaskIds) => {
+    const previousBoard = get().board
+    if (!previousBoard) return
+
+    // Apply the new order optimistically
+    const orderByTaskId = new Map()
+    newTaskIds.forEach((id, index) => orderByTaskId.set(id, index))
+
+    set({
+      board: {
+        ...previousBoard,
+        tasks: previousBoard.tasks.map((t) =>
+          orderByTaskId.has(t._id) ? { ...t, order: orderByTaskId.get(t._id) } : t
+        ),
+      },
+    })
+
+    // Sync each task's new order to the API
+    try {
+      const updates = newTaskIds.map((id, index) =>
+        api.updateTaskOrder(id, index)
+      )
+      await Promise.all(updates)
+    } catch (err) {
+      set({ board: previousBoard, error: err.message })
+      throw err
+    }
+  },
+
   // Optimistic delete. Removes the task from the store, syncs to API, rolls back on failure.
   deleteTask: async (taskId) => {
     const previousBoard = get().board

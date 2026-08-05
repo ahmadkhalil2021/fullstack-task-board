@@ -1,6 +1,7 @@
 // Task model — a single task on a board.
 // Status is a free string, but the API layer enforces that it must be
 // one of the values in the parent board's `statuses` array.
+// `order` is a numeric sort key within the task's status column.
 
 import mongoose from 'mongoose'
 
@@ -17,7 +18,6 @@ const taskSchema = new mongoose.Schema({
     maxlength: 1000,
     trim: true,
   },
-  // Stored as text (not image) so it's portable and easy to render
   icon: {
     type: String,
     default: '⏰',
@@ -30,8 +30,13 @@ const taskSchema = new mongoose.Schema({
     type: String,
     default: 'Backlog',
   },
+  // Sort order within the task's status column. Lower = first.
+  // Set by the API when tasks are created or reordered.
+  order: {
+    type: Number,
+    default: 0,
+  },
 }, {
-  // Adds createdAt + updatedAt automatically
   timestamps: true,
 })
 

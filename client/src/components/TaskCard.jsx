@@ -1,17 +1,26 @@
-// TaskCard.jsx — Draggable card for a single task
-// Click to open the edit modal. Drag to move to another column.
-// The activationConstraint (5px) ensures click vs drag is disambiguated.
+// TaskCard.jsx — Sortable + draggable card for a single task
+// Click to open the edit modal. Drag to move or reorder.
+// Uses useSortable from @dnd-kit/sortable for in-list reordering.
 
-import { useDraggable } from '@dnd-kit/core'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 const TaskCard = ({ task, onClick }) => {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: task._id,
-  })
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task._id })
 
-  // Combine DnD listeners with the click handler.
-  // dnd-kit will only start a drag after the pointer moves 5px (configured in sensors),
-  // so a single click still triggers onClick.
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  // Click handler: only fires if we're not in the middle of a drag
   const handleClick = (e) => {
     if (!isDragging) onClick(task)
   }
@@ -19,11 +28,12 @@ const TaskCard = ({ task, onClick }) => {
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
+      style={style}
       {...attributes}
+      {...listeners}
       onClick={handleClick}
       data-task-id={task._id}
-      className={`bg-white dark:bg-gray-800 rounded-md p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all cursor-grab active:cursor-grabbing touch-none ${
+      className={`bg-white dark:bg-gray-800 rounded-md p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-shadow cursor-grab active:cursor-grabbing touch-none ${
         isDragging ? 'opacity-30' : ''
       }`}
     >

@@ -47,11 +47,14 @@ router.post('/', async (req, res, next) => {
 
     // Create one default task per status. We do this first so we can
     // pass the task IDs to the board on creation (single round-trip).
+    // We assign `order` incrementally so the tasks display in the same
+    // order as the statuses array.
     const taskDocs = await Task.insertMany(
-      finalStatuses.map((status) => ({
+      finalStatuses.map((status, index) => ({
         name: `Task ${status}`,
         status,
         icon: '⏰',
+        order: index,
       }))
     )
 

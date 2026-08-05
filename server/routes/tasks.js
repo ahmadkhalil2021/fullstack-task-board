@@ -91,6 +91,27 @@ router.put('/:taskId', async (req, res, next) => {
   }
 })
 
+// PUT /api/tasks/:taskId/order
+// Updates a single task's `order` field within its column.
+// Used for reordering tasks within a column.
+router.put('/:taskId/order', async (req, res, next) => {
+  try {
+    const { order } = req.body || {}
+    if (typeof order !== 'number' || !Number.isFinite(order)) {
+      throw validationError('order must be a number')
+    }
+    const task = await Task.findByIdAndUpdate(
+      req.params.taskId,
+      { order },
+      { new: true }
+    )
+    if (!task) throw notFound('Task not found')
+    res.json({ data: { task } })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // DELETE /api/tasks/:taskId
 // Removes the task and pulls its ID from the parent board's tasks array.
 router.delete('/:taskId', async (req, res, next) => {

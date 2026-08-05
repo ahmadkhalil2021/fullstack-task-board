@@ -201,3 +201,28 @@ test('POST /api/tasks rejects missing parentBoardId', async () => {
   })
   assert.equal(res.status, 400)
 })
+
+// --- PUT /api/tasks/:taskId/order ---
+
+test('PUT /api/tasks/:taskId/order updates the order field', async () => {
+  const board = await createBoardWithTasks(['A', 'B', 'C'])
+  const taskId = board.tasks[0]._id
+
+  const res = await request(app).put(`/api/tasks/${taskId}/order`).send({ order: 5 })
+  assert.equal(res.status, 200)
+  assert.equal(res.body.data.task.order, 5)
+})
+
+test('PUT /api/tasks/:taskId/order rejects non-numeric order', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const taskId = board.tasks[0]._id
+
+  const res = await request(app).put(`/api/tasks/${taskId}/order`).send({ order: 'first' })
+  assert.equal(res.status, 400)
+})
+
+test('PUT /api/tasks/:taskId/order returns 404 for missing task', async () => {
+  const fakeId = '64b2f1a000000000000000aa'
+  const res = await request(app).put(`/api/tasks/${fakeId}/order`).send({ order: 1 })
+  assert.equal(res.status, 404)
+})
