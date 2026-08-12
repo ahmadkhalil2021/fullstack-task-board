@@ -16,13 +16,16 @@ const router = express.Router()
 // with the given parentBoardId in its tasks array.
 router.post('/', async (req, res, next) => {
   try {
-    const { name, description, icon, status, parentBoardId } = req.body || {}
+    const { name, description, icon, status, order, parentBoardId } = req.body || {}
 
     if (!parentBoardId) {
       throw validationError('parentBoardId is required')
     }
     if (!status) {
       throw validationError('status is required')
+    }
+    if (order !== undefined && (typeof order !== 'number' || !Number.isFinite(order))) {
+      throw validationError('order must be a number')
     }
 
     // Find the parent board and verify the status is in its allowed list
@@ -34,8 +37,8 @@ router.post('/', async (req, res, next) => {
       )
     }
 
-    // Create the task
-    const task = await Task.create({ name, description, icon, status })
+    // Create the task. `order` defaults to 0 when omitted (see Task model).
+    const task = await Task.create({ name, description, icon, status, order })
 
     // Link the task to the board
     board.tasks.push(task._id)
