@@ -3,7 +3,7 @@
 // - Another column → change status
 // - Same column → reorder (with @dnd-kit/sortable)
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   DndContext,
@@ -30,9 +30,14 @@ const BoardPage = () => {
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const updateTask = useBoardStore(s => s.updateTask)
   const reorderTasksInColumn = useBoardStore(s => s.reorderTasksInColumn)
+  const addTask = useBoardStore(s => s.addTask)
 
   const [editingTask, setEditingTask] = useState(null)
   const [draggingTask, setDraggingTask] = useState(null)
+  const [isAddingTask, setIsAddingTask] = useState(false)
+  // Synchronous guard so two rapid clicks can't both start a create before
+  // the `isAddingTask` state re-render disables the button.
+  const hasStarted = useRef(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -93,6 +98,22 @@ const BoardPage = () => {
     reorderTasksInColumn(sourceStatus, newSortedIds)
   }
 
+  const handleAddTask = async () => {
+    if (!board || !board.statuses?.length) return
+    if (hasStarted.current) return
+    hasStarted.current = true
+    setIsAddingTask(true)
+    try {
+      const realTask = await addTask(board.statuses[0])
+      setEditingTask(realTask)
+    } catch {
+      // The store already rolled back and set `error`; the existing error UI displays it.
+    } finally {
+      hasStarted.current = false
+      setIsAddingTask(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center text-gray-500 dark:text-gray-400">
@@ -129,7 +150,7 @@ const BoardPage = () => {
             <EmptyBoard message="No columns defined for this board" />
           ) : (
             <div className="flex gap-4 h-full">
-              {board.statuses.map((status) => {
+              {board.statuses.map((status, index) => {
                 const columnTasks = board.tasks
                   .filter((t) => t.status === status)
                   .sort((a, b) => a.order - b.order)
@@ -143,6 +164,8 @@ const BoardPage = () => {
                       status={status}
                       tasks={columnTasks}
                       onTaskClick={setEditingTask}
+                      onAddTask={index === 0 ? handleAddTask : undefined}
+                      isAddingTask={isAddingTask}
                     />
                   </SortableContext>
                 )

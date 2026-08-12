@@ -175,6 +175,54 @@ Delete a board and all its tasks (cascade).
 
 ## Tasks
 
+### `POST /api/tasks`
+Create a new task in a board column (used by the "Add new task" button).
+
+**Request Body**
+```json
+{
+  "name": "New Task",
+  "description": "",
+  "icon": "⏰",
+  "status": "Backlog",
+  "order": -1,
+  "parentBoardId": "64b2f1a..."
+}
+```
+`parentBoardId` and `status` are required. `name`, `description`, `icon`, and `order` are optional (defaults applied if missing). `status` must be one of the board's `statuses`; `order` must be a number.
+
+**Response 201**
+```json
+{
+  "data": {
+    "task": {
+      "_id": "64b2f1e...",
+      "name": "New Task",
+      "description": "",
+      "icon": "⏰",
+      "status": "Backlog",
+      "order": -1,
+      "createdAt": "2026-08-04T...",
+      "updatedAt": "2026-08-04T..."
+    }
+  }
+}
+```
+
+**Response 400**
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "parentBoardId is required"
+  }
+}
+```
+
+Reference: `server/routes/tasks.js`.
+
+---
+
 ### `PUT /api/tasks/:taskId`
 Update a task's fields.
 

@@ -164,16 +164,27 @@ export const useBoardStore = create((set, get) => ({
   // Add a new task to the current board. Optimistic.
   addTask: async (status) => {
     const previousBoard = get().board
-    if (!previousBoard) return
+    if (!previousBoard) {
+      throw new Error('No board loaded')
+    }
+
+    // Kanban inbox style: place the new task above the current top of the column.
+    // Empty columns start at 0.
+    const orders = previousBoard.tasks
+      .filter((t) => t.status === status)
+      .map((t) => t.order ?? 0)
+    const newOrder = orders.length ? Math.min(...orders) - 1 : 0
 
     // Optimistic placeholder
-    const tempId = `temp-${Date.now()}`
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const tempTask = {
       _id: tempId,
       name: 'New Task',
       description: '',
       icon: '⏰',
       status,
+      order: newOrder,
+      parentBoardId: previousBoard._id,
     }
     set({
       board: {
@@ -183,13 +194,22 @@ export const useBoardStore = create((set, get) => ({
     })
 
     try {
-      const task = await api.createTask({ status })
+      // api.createTask already unwraps `res.data.task`, so this is the real task.
+      const realTask = await api.createTask({
+        name: tempTask.name,
+        description: tempTask.description,
+        icon: tempTask.icon,
+        status,
+        order: newOrder,
+        parentBoardId: previousBoard._id,
+      })
       set({
         board: {
           ...get().board,
-          tasks: get().board.tasks.map((t) => (t._id === tempId ? task : t)),
+          tasks: get().board.tasks.map((t) => (t._id === tempId ? realTask : t)),
         },
       })
+      return realTask
     } catch (err) {
       set({ board: previousBoard, error: err.message })
       throw err

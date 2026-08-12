@@ -3,8 +3,9 @@
 
 import { useDroppable } from '@dnd-kit/core'
 import TaskCard from './TaskCard.jsx'
+import AddTaskButton from './AddTaskButton.jsx'
 
-const Column = ({ status, tasks, onTaskClick }) => {
+const Column = ({ status, tasks, onTaskClick, onAddTask, isAddingTask }) => {
   // Make this column a drop target. `isOver` is true when a draggable is over it.
   const { isOver, setNodeRef } = useDroppable({ id: status })
 
@@ -31,6 +32,9 @@ const Column = ({ status, tasks, onTaskClick }) => {
           <TaskCard key={task._id} task={task} onClick={onTaskClick} />
         ))}
       </div>
+      {onAddTask && (
+        <AddTaskButton onClick={onAddTask} disabled={isAddingTask} />
+      )}
     </div>
   )
 }

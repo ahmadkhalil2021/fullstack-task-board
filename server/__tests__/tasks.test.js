@@ -202,6 +202,29 @@ test('POST /api/tasks rejects missing parentBoardId', async () => {
   assert.equal(res.status, 400)
 })
 
+test('POST /api/tasks persists the order field', async () => {
+  const board = await createBoardWithTasks(['A', 'B'])
+  const res = await request(app).post('/api/tasks').send({
+    name: 'Top task',
+    status: 'A',
+    order: -1,
+    parentBoardId: board._id,
+  })
+  assert.equal(res.status, 201)
+  assert.equal(res.body.data.task.order, -1)
+})
+
+test('POST /api/tasks rejects non-numeric order', async () => {
+  const board = await createBoardWithTasks(['A', 'B'])
+  const res = await request(app).post('/api/tasks').send({
+    status: 'A',
+    order: 'first',
+    parentBoardId: board._id,
+  })
+  assert.equal(res.status, 400)
+  assert.equal(res.body.error.code, 'VALIDATION_ERROR')
+})
+
 // --- PUT /api/tasks/:taskId/order ---
 
 test('PUT /api/tasks/:taskId/order updates the order field', async () => {
