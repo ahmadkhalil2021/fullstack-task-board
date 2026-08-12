@@ -5,6 +5,11 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Task Board</title>
+    <!--
+      FOUC-prevention: must run synchronously before React mounts.
+      Uses `var` and explicit semicolons because this script ships as
+      HTML-embedded and bypasses our JS tooling (oxlint/eslint/Prettier).
+    -->
     <script>
       (function () {
         try {

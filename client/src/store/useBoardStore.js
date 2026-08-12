@@ -18,11 +18,19 @@ const applyTheme = (theme) => {
   document.documentElement.classList.toggle('dark', dark)
 }
 
+const VALID_THEMES = ['light', 'dark', 'system']
+
+// Fall back to 'system' on stale/corrupt values left in localStorage by older builds
+const sanitizeTheme = (t) => (VALID_THEMES.includes(t) ? t : 'system')
+
 export const useBoardStore = create((set, get) => ({
   board: null,
   isLoading: false,
   error: null,
-  theme: (typeof window !== 'undefined' && localStorage.getItem('theme')) || 'system',
+  theme: sanitizeTheme(
+    typeof window !== 'undefined' ? localStorage.getItem('theme') : null
+  ),
+  _themeListenerAttached: false,
 
   // Fetch a board by ID. Used by BoardPage on mount.
   fetchBoard: async (boardId) => {
@@ -228,6 +236,7 @@ export const useBoardStore = create((set, get) => ({
   },
 
   setTheme: (t) => {
+    if (!VALID_THEMES.includes(t)) return
     localStorage.setItem('theme', t)
     set({ theme: t })
     applyTheme(t)
@@ -235,10 +244,16 @@ export const useBoardStore = create((set, get) => ({
 
   // Apply the persisted theme on startup and react to OS theme changes
   // while the user has not picked an explicit light/dark preference.
+  // App-level listener — intentional singleton. HMR guard prevents double-subscribe in dev.
   initTheme: () => {
     applyTheme(get().theme)
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (get()._themeListenerAttached) return // HMR guard
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    if (typeof mq.addEventListener !== 'function') return
+    mq.addEventListener('change', () => {
       if (get().theme === 'system') applyTheme('system')
     })
+    set({ _themeListenerAttached: true })
   },
 }))

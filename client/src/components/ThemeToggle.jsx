@@ -22,7 +22,7 @@ const ThemeToggle = () => {
       type="button"
       onClick={next}
       aria-label={`Theme: ${theme}`}
-      className="text-xl leading-none p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="text-xl leading-none p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       {ICONS[theme]}
     </button>
