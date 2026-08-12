@@ -158,4 +158,9 @@ describe('Add new task', () => {
 
     expect(api.createTask).toHaveBeenCalledTimes(1)
   })
+
+  it('throws when no board is loaded', async () => {
+    useBoardStore.setState({ board: null, isLoading: false, error: null })
+    await expect(useBoardStore.getState().addTask('Backlog')).rejects.toThrow('No board loaded')
+  })
 })

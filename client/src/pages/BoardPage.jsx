@@ -38,7 +38,6 @@ const BoardPage = () => {
   // Synchronous guard so two rapid clicks can't both start a create before
   // the `isAddingTask` state re-render disables the button.
   const hasStarted = useRef(false)
-  const isMountedRef = useRef(true)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -50,13 +49,6 @@ const BoardPage = () => {
       fetchBoard(boardId)
     }
   }, [boardId, board?._id, fetchBoard])
-
-  useEffect(() => {
-    isMountedRef.current = true
-    return () => {
-      isMountedRef.current = false
-    }
-  }, [])
 
   // Find the column a task belongs to
   const findColumnOfTask = (taskId) => {
@@ -107,12 +99,12 @@ const BoardPage = () => {
   }
 
   const handleAddTask = async () => {
+    if (!board || !board.statuses?.length) return
     if (hasStarted.current) return
     hasStarted.current = true
     setIsAddingTask(true)
     try {
       const realTask = await addTask(board.statuses[0])
-      if (!isMountedRef.current) return
       setEditingTask(realTask)
     } catch {
       // The store already rolled back and set `error`; the existing error UI displays it.
