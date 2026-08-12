@@ -1,3 +1,4 @@
+// HomePage.jsx — Landing page at "/". Auto-creates a board and redirects.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBoardStore } from '../store/useBoardStore.js'
@@ -5,7 +6,7 @@ import { useBoardStore } from '../store/useBoardStore.js'
 const HomePage = () => {
   const navigate = useNavigate()
   const createBoard = useBoardStore((s) => s.createBoard)
-  const [status, setStatus] = useState('idle')
+  const [status, setStatus] = useState('creating')
   const [error, setError] = useState(null)
   const hasStarted = useRef(false)
   const isMounted = useRef(true)
@@ -18,7 +19,6 @@ const HomePage = () => {
     try {
       const boardId = await createBoard()
       if (!isMounted.current) return
-      setStatus('success')
       navigate(`/board/${boardId}`, { replace: true })
     } catch (err) {
       if (!isMounted.current) return
