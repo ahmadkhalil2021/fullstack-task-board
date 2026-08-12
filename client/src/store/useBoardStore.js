@@ -8,10 +8,21 @@
 import { create } from 'zustand'
 import * as api from '../lib/api.js'
 
+// Toggle the `dark` class on <html> so Tailwind's `dark:` variants apply
+// (requires `darkMode: 'class'` in tailwind.config.js).
+const applyTheme = (theme) => {
+  const dark =
+    theme === 'dark' ||
+    (theme === 'system' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.classList.toggle('dark', dark)
+}
+
 export const useBoardStore = create((set, get) => ({
   board: null,
   isLoading: false,
   error: null,
+  theme: (typeof window !== 'undefined' && localStorage.getItem('theme')) || 'system',
 
   // Fetch a board by ID. Used by BoardPage on mount.
   fetchBoard: async (boardId) => {
@@ -214,5 +225,20 @@ export const useBoardStore = create((set, get) => ({
       set({ board: previousBoard, error: err.message })
       throw err
     }
+  },
+
+  setTheme: (t) => {
+    localStorage.setItem('theme', t)
+    set({ theme: t })
+    applyTheme(t)
+  },
+
+  // Apply the persisted theme on startup and react to OS theme changes
+  // while the user has not picked an explicit light/dark preference.
+  initTheme: () => {
+    applyTheme(get().theme)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (get().theme === 'system') applyTheme('system')
+    })
   },
 }))
