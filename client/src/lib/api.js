@@ -2,11 +2,11 @@
 // All API calls go through this module. Components should call the Zustand
 // store actions, not this directly — keeps fetch details out of the UI.
 
-const BASE = '/api'
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 // Helper that throws a typed error when the response is not OK
 const request = async (path, options = {}) => {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   })

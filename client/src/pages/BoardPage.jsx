@@ -27,6 +27,7 @@ const BoardPage = () => {
   const board = useBoardStore(s => s.board)
   const isLoading = useBoardStore(s => s.isLoading)
   const error = useBoardStore(s => s.error)
+  const clearError = useBoardStore(s => s.clearError)
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const updateTask = useBoardStore(s => s.updateTask)
   const reorderTasksInColumn = useBoardStore(s => s.reorderTasksInColumn)
@@ -122,65 +123,66 @@ const BoardPage = () => {
     )
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!board) {
-    return <EmptyBoard message="No board loaded" />
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <BoardHeader />
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <main className="flex-1 p-6 overflow-x-auto">
-          {board.statuses.length === 0 ? (
-            <EmptyBoard message="No columns defined for this board" />
-          ) : (
-            <div className="flex gap-4 h-full">
-              {board.statuses.map((status, index) => {
-                const columnTasks = board.tasks
-                  .filter((t) => t.status === status)
-                  .sort((a, b) => a.order - b.order)
-                return (
-                  <SortableContext
-                    key={status}
-                    items={columnTasks.map((t) => t._id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <Column
-                      status={status}
-                      tasks={columnTasks}
-                      onTaskClick={setEditingTask}
-                      onAddTask={index === 0 ? handleAddTask : undefined}
-                      isAddingTask={isAddingTask}
-                    />
-                  </SortableContext>
-                )
-              })}
-            </div>
+      {error && (
+        <div role="alert" className="bg-red-100 dark:bg-red-900 border-b border-red-300 dark:border-red-700 px-6 py-3 text-red-800 dark:text-red-100">
+          <div className="flex items-center justify-between">
+            <p>{error}</p>
+            <button onClick={clearError} aria-label="Dismiss error">×</button>
+          </div>
+        </div>
+      )}
+
+      {!board ? (
+        <EmptyBoard message="No board loaded" />
+      ) : (
+        <>
+          <BoardHeader />
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <main className="flex-1 p-6 overflow-x-auto">
+              {board.statuses.length === 0 ? (
+                <EmptyBoard message="No columns defined for this board" />
+              ) : (
+                <div className="flex gap-4 h-full">
+                  {board.statuses.map((status, index) => {
+                    const columnTasks = board.tasks
+                      .filter((t) => t.status === status)
+                      .sort((a, b) => a.order - b.order)
+                    return (
+                      <SortableContext
+                        key={status}
+                        items={columnTasks.map((t) => t._id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <Column
+                          status={status}
+                          tasks={columnTasks}
+                          onTaskClick={setEditingTask}
+                          onAddTask={index === 0 ? handleAddTask : undefined}
+                          isAddingTask={isAddingTask}
+                        />
+                      </SortableContext>
+                    )
+                  })}
+                </div>
+              )}
+            </main>
+
+            <DragOverlay>
+              {draggingTask ? <TaskCard task={draggingTask} /> : null}
+            </DragOverlay>
+          </DndContext>
+
+          {editingTask && (
+            <TaskForm task={editingTask} onClose={() => setEditingTask(null)} />
           )}
-        </main>
-
-        <DragOverlay>
-          {draggingTask ? <TaskCard task={draggingTask} /> : null}
-        </DragOverlay>
-      </DndContext>
-
-      {editingTask && (
-        <TaskForm task={editingTask} onClose={() => setEditingTask(null)} />
+        </>
       )}
     </div>
   )

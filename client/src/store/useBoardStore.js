@@ -43,6 +43,9 @@ export const useBoardStore = create((set, get) => ({
     }
   },
 
+  // Clear the global error banner.
+  clearError: () => set({ error: null }),
+
   // Create a new board and return its ID.
   createBoard: async () => {
     const board = await api.createBoard({})
