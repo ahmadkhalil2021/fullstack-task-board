@@ -1,18 +1,58 @@
 // BoardHeader.jsx — Top of the board page
 // Shows the board name and description as editable fields.
-// Issue #6: editing is local state only (no persistence). Saving will come later.
+// Persists on blur via the store's optimistic updateBoard action.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useBoardStore } from '../store/useBoardStore.js'
 import ThemeToggle from './ThemeToggle.jsx'
 
 const BoardHeader = () => {
-  const name = useBoardStore(s => s.board?.name ?? '')
-  const description = useBoardStore(s => s.board?.description ?? '')
+  const board = useBoardStore(s => s.board)
+  const updateBoard = useBoardStore(s => s.updateBoard)
 
-  // Local state for in-progress edits. We don't save these yet.
-  const [draftName, setDraftName] = useState(name)
-  const [draftDescription, setDraftDescription] = useState(description)
+  const [draftName, setDraftName] = useState('')
+  const [draftDescription, setDraftDescription] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+
+  // Sync only on board identity change: syncing on name/description would
+  // clobber the user's in-progress edits when the store rolls back after a failed save.
+  useEffect(() => {
+    if (board) {
+      setDraftName(board.name ?? '')
+      setDraftDescription(board.description ?? '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board?._id])
+
+  const save = async () => {
+    if (!board) return
+    const trimmedName = draftName.trim()
+    const trimmedDescription = draftDescription.trim()
+    if (!trimmedName) {
+      setSaveError('Board name is required')
+      setDraftName(board.name ?? '')
+      return
+    }
+    if (trimmedName === (board.name ?? '') && trimmedDescription === (board.description ?? '')) return
+
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await updateBoard({ name: trimmedName, description: trimmedDescription })
+    } catch (err) {
+      setSaveError(err?.message || 'Could not save board')
+      useBoardStore.getState().clearError() // suppress duplicate global banner
+      // Sync drafts back to rolled-back values so the next blur is a no-op
+      const current = useBoardStore.getState().board
+      if (current) {
+        setDraftName(current.name ?? '')
+        setDraftDescription(current.description ?? '')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <header className="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -21,6 +61,8 @@ const BoardHeader = () => {
           type="text"
           value={draftName}
           onChange={(e) => setDraftName(e.target.value)}
+          onBlur={save}
+          disabled={saving}
           className="w-full text-2xl font-bold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 text-gray-900 dark:text-gray-100"
           placeholder="Board name"
         />
@@ -28,9 +70,17 @@ const BoardHeader = () => {
           type="text"
           value={draftDescription}
           onChange={(e) => setDraftDescription(e.target.value)}
+          onBlur={save}
+          disabled={saving}
           className="w-full mt-1 text-sm bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 text-gray-600 dark:text-gray-400"
           placeholder="Add a description..."
         />
+        {saving && <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Saving...</p>}
+        {saveError && (
+          <p role="alert" className="text-red-600 dark:text-red-400 text-sm mt-1">
+            {saveError}
+          </p>
+        )}
       </div>
       <ThemeToggle />
     </header>
