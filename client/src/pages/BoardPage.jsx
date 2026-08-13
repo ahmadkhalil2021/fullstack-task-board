@@ -116,8 +116,24 @@ const BoardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center text-gray-500 dark:text-gray-400">
-        Loading...
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+        <div className="flex gap-4 p-6 overflow-x-auto" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="flex flex-col rounded-lg p-3 min-w-[280px] flex-1 bg-gray-100 dark:bg-gray-900 animate-pulse"
+            >
+              <div className="flex items-center justify-between px-2 py-1 mb-2">
+                <div className="h-4 w-24 rounded bg-gray-300 dark:bg-gray-700" />
+                <div className="h-5 w-8 rounded-full bg-gray-300 dark:bg-gray-700" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="h-32 rounded-md bg-gray-200 dark:bg-gray-800" />
+                <div className="h-32 rounded-md bg-gray-200 dark:bg-gray-800" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }

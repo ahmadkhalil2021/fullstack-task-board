@@ -55,7 +55,7 @@ const BoardHeader = () => {
   }
 
   return (
-    <header className="flex items-start justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <header className="flex items-start justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 transition-colors duration-150">
       <div className="flex-1">
         <input
           type="text"
@@ -63,7 +63,8 @@ const BoardHeader = () => {
           onChange={(e) => setDraftName(e.target.value)}
           onBlur={save}
           disabled={saving}
-          className="w-full text-2xl font-bold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 text-gray-900 dark:text-gray-100"
+          aria-label="Board name"
+          className="w-full text-xl sm:text-2xl font-bold bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1 text-gray-900 dark:text-gray-100"
           placeholder="Board name"
         />
         <input
@@ -72,13 +73,17 @@ const BoardHeader = () => {
           onChange={(e) => setDraftDescription(e.target.value)}
           onBlur={save}
           disabled={saving}
-          className="w-full mt-1 text-sm bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 text-gray-600 dark:text-gray-400"
+          aria-label="Board description"
+          className="w-full mt-1 text-sm bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1 text-gray-600 dark:text-gray-400"
           placeholder="Add a description..."
         />
-        {saving && <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Saving...</p>}
-        {saveError && (
-          <p role="alert" className="text-red-600 dark:text-red-400 text-sm mt-1">
-            {saveError}
+        {(saving || saveError) && (
+          <p
+            role={saveError ? 'alert' : 'status'}
+            aria-live={saveError ? 'assertive' : 'polite'}
+            className={`text-sm mt-1 transition-colors duration-150 ${saveError ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}
+          >
+            {saveError || 'Saving...'}
           </p>
         )}
       </div>
