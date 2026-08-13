@@ -1,6 +1,6 @@
 // __tests__/status-manager.test.jsx — Tests for the status manager modal
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as api from '../lib/api.js'
 import StatusManager from '../components/StatusManager.jsx'
@@ -60,6 +60,18 @@ describe('StatusManager', () => {
     expect(input.tagName).toBe('INPUT')
   })
 
+  it('generates unique default names when adding multiple statuses', async () => {
+    const user = userEvent.setup()
+    useBoardStore.setState({ board: makeBoard() })
+    render(<StatusManager isOpen onClose={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: '+ Add status' }))
+    await user.click(screen.getByRole('button', { name: '+ Add status' }))
+
+    expect(screen.getByDisplayValue('New status 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New status' })).toBeInTheDocument()
+  })
+
   it('rename via inline edit commits the new name on blur', async () => {
     const user = userEvent.setup()
     useBoardStore.setState({ board: makeBoard() })
@@ -75,6 +87,21 @@ describe('StatusManager', () => {
     expect(screen.queryByRole('button', { name: 'In Progress' })).not.toBeInTheDocument()
   })
 
+  it('Escape during inline edit cancels the edit but keeps the modal open', async () => {
+    const user = userEvent.setup()
+    useBoardStore.setState({ board: makeBoard() })
+    const onClose = vi.fn()
+    render(<StatusManager isOpen onClose={onClose} />)
+
+    await user.click(screen.getByRole('button', { name: 'In Progress' }))
+    const input = screen.getByDisplayValue('In Progress')
+    await user.type(input, '{Escape}')
+
+    expect(screen.getByRole('button', { name: 'In Progress' })).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
   it('cannot remove a status with tasks', () => {
     useBoardStore.setState({
       board: makeBoard({
@@ -84,6 +111,27 @@ describe('StatusManager', () => {
     render(<StatusManager isOpen onClose={() => {}} />)
 
     const trash = screen.getByRole('button', { name: 'Remove status: In Progress' })
+    expect(trash).toBeDisabled()
+    expect(trash).toHaveAttribute('title', 'Cannot remove: 1 task(s) in this status')
+    expect(screen.getByText('1 task')).toBeInTheDocument()
+  })
+
+  it('keeps a status non-removable after rename when it still has tasks', async () => {
+    const user = userEvent.setup()
+    useBoardStore.setState({
+      board: makeBoard({
+        tasks: [{ _id: 't1', name: 'Task', status: 'In Progress', order: 0 }],
+      }),
+    })
+    render(<StatusManager isOpen onClose={() => {}} />)
+
+    await user.click(screen.getByRole('button', { name: 'In Progress' }))
+    const input = screen.getByDisplayValue('In Progress')
+    await user.clear(input)
+    await user.type(input, 'Doing')
+    await user.tab()
+
+    const trash = screen.getByRole('button', { name: 'Remove status: Doing' })
     expect(trash).toBeDisabled()
     expect(trash).toHaveAttribute('title', 'Cannot remove: 1 task(s) in this status')
     expect(screen.getByText('1 task')).toBeInTheDocument()
@@ -111,32 +159,34 @@ describe('StatusManager', () => {
     expect(screen.queryByRole('button', { name: 'Backlog' })).not.toBeInTheDocument()
   })
 
-  it('rejects an empty status name on save', async () => {
+  it('reverts an empty status name on inline edit', async () => {
     const user = userEvent.setup()
     useBoardStore.setState({ board: makeBoard() })
     render(<StatusManager isOpen onClose={() => {}} />)
 
-    await user.click(screen.getByRole('button', { name: '+ Add status' }))
-    const input = screen.getByDisplayValue('New status')
+    await user.click(screen.getByRole('button', { name: 'In Progress' }))
+    const input = screen.getByDisplayValue('In Progress')
     await user.clear(input)
-    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await user.tab()
 
-    expect(await screen.findByText('Status names cannot be empty')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'In Progress' })).toBeInTheDocument()
     expect(api.updateBoard).not.toHaveBeenCalled()
   })
 
-  it('rejects a duplicate status name on save', async () => {
+  it('rejects a duplicate status name on inline edit', async () => {
     const user = userEvent.setup()
     useBoardStore.setState({ board: makeBoard() })
     render(<StatusManager isOpen onClose={() => {}} />)
 
-    await user.click(screen.getByRole('button', { name: '+ Add status' }))
-    const input = screen.getByDisplayValue('New status')
+    await user.click(screen.getByRole('button', { name: 'In Progress' }))
+    const input = screen.getByDisplayValue('In Progress')
     await user.clear(input)
     await user.type(input, 'Backlog')
-    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await user.tab()
 
-    expect(await screen.findByText('Status names must be unique')).toBeInTheDocument()
+    expect(screen.getByText('Status names must be unique')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('In Progress')).toBeInTheDocument()
     expect(api.updateBoard).not.toHaveBeenCalled()
   })
 
@@ -175,5 +225,20 @@ describe('StatusManager', () => {
       expect(screen.queryByRole('button', { name: 'New status' })).not.toBeInTheDocument()
     })
     expect(screen.getByRole('button', { name: 'Backlog' })).toBeInTheDocument()
+  })
+
+  it('does not close the modal when the backdrop is clicked during remove confirmation', async () => {
+    const user = userEvent.setup()
+    useBoardStore.setState({ board: makeBoard() })
+    const onClose = vi.fn()
+    render(<StatusManager isOpen onClose={onClose} />)
+
+    await user.click(screen.getByRole('button', { name: 'Remove status: Backlog' }))
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('dialog'))
+
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
   })
 })

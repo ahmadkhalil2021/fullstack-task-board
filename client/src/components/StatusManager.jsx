@@ -67,17 +67,34 @@ const StatusManager = ({ isOpen, onClose }) => {
   const commitEdit = () => {
     if (editingIndex === null) return
     const next = [...draft]
-    next[editingIndex] = editingValue
+    const proposedValue = editingValue.trim()
+    const trial = [...draft]
+    // Empty edits revert to the original value, so validation sees a no-op
+    trial[editingIndex] = proposedValue || draft[editingIndex]
+    const validationError = validate(trial)
+    if (validationError && proposedValue !== draft[editingIndex]) {
+      setError(validationError)
+      setEditingValue(draft[editingIndex])
+      return
+    }
+    next[editingIndex] = proposedValue || draft[editingIndex]
     setDraft(next)
     setEditingIndex(null)
     setEditingValue('')
   }
 
   const addStatus = () => {
-    setDraft([...draft, 'New status'])
-    // Immediately start editing the new row
+    const baseName = 'New status'
+    let name = baseName
+    let counter = 2
+    const existingNames = new Set(draft.map((s) => s.toLowerCase()))
+    while (existingNames.has(name.toLowerCase())) {
+      name = `${baseName} ${counter}`
+      counter += 1
+    }
+    setDraft([...draft, name])
     setEditingIndex(draft.length)
-    setEditingValue('New status')
+    setEditingValue(name)
     setError(null)
   }
 
@@ -95,8 +112,12 @@ const StatusManager = ({ isOpen, onClose }) => {
 
   const cancelRemove = () => setConfirmingRemove(null)
 
-  const canRemove = (status) =>
-    taskCountFor(status) === 0 && draft.length > 1
+  // Use the index to look up the original server-side status name
+  const canRemove = (index) => {
+    const originalName = board.statuses[index]
+    const hasTasks = board.tasks.some((t) => t.status === originalName)
+    return !hasTasks && draft.length > 1
+  }
 
   return (
     <div
@@ -104,8 +125,12 @@ const StatusManager = ({ isOpen, onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="status-manager-title"
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
+      onClick={() => {
+        if (confirmingRemove === null) onClose()
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && confirmingRemove === null) onClose()
+      }}
     >
       <div
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"
@@ -117,9 +142,9 @@ const StatusManager = ({ isOpen, onClose }) => {
 
         <ul className="space-y-2 mb-4">
           {draft.map((status, index) => {
-            const count = taskCountFor(status)
+            const count = taskCountFor(board.statuses[index])
             const isEditing = editingIndex === index
-            const removable = canRemove(status)
+            const removable = canRemove(index)
             return (
               <li
                 key={`${status}-${index}`}
@@ -134,8 +159,12 @@ const StatusManager = ({ isOpen, onClose }) => {
                       onChange={(e) => setEditingValue(e.target.value)}
                       onBlur={commitEdit}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitEdit()
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          commitEdit()
+                        }
                         if (e.key === 'Escape') {
+                          e.stopPropagation() // prevent backdrop from closing modal
                           setEditingIndex(null)
                           setEditingValue('')
                         }
