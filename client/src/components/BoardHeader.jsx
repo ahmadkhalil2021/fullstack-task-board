@@ -27,20 +27,28 @@ const BoardHeader = () => {
 
   const save = async () => {
     if (!board) return
-    const trimmed = draftName.trim()
-    if (!trimmed) {
+    const trimmedName = draftName.trim()
+    const trimmedDescription = draftDescription.trim()
+    if (!trimmedName) {
       setSaveError('Board name is required')
       setDraftName(board.name ?? '')
       return
     }
-    if (trimmed === (board.name ?? '') && draftDescription === (board.description ?? '')) return
+    if (trimmedName === (board.name ?? '') && trimmedDescription === (board.description ?? '')) return
 
     setSaving(true)
     setSaveError(null)
     try {
-      await updateBoard({ name: trimmed, description: draftDescription })
+      await updateBoard({ name: trimmedName, description: trimmedDescription })
     } catch (err) {
       setSaveError(err?.message || 'Could not save board')
+      useBoardStore.getState().clearError() // suppress duplicate global banner
+      // Sync drafts back to rolled-back values so the next blur is a no-op
+      const current = useBoardStore.getState().board
+      if (current) {
+        setDraftName(current.name ?? '')
+        setDraftDescription(current.description ?? '')
+      }
     } finally {
       setSaving(false)
     }
@@ -68,7 +76,11 @@ const BoardHeader = () => {
           placeholder="Add a description..."
         />
         {saving && <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Saving...</p>}
-        {saveError && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{saveError}</p>}
+        {saveError && (
+          <p role="alert" className="text-red-600 dark:text-red-400 text-sm mt-1">
+            {saveError}
+          </p>
+        )}
       </div>
       <ThemeToggle />
     </header>

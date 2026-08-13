@@ -61,6 +61,19 @@ describe('BoardHeader persistence', () => {
     expect(api.updateBoard).not.toHaveBeenCalled()
   })
 
+  it('reverts the draft to the saved name when blur is fired with empty value', () => {
+    api.updateBoard.mockResolvedValue({ _id: 'b1', name: 'Original', description: '' })
+    useBoardStore.setState({ board: { _id: 'b1', name: 'Original', description: '' }, isLoading: false, error: null })
+    render(<BoardHeader />)
+
+    fireEvent.change(getNameInput(), { target: { value: '' } })
+    fireEvent.blur(getNameInput())
+
+    expect(getNameInput()).toHaveValue('Original')
+    expect(screen.getByRole('alert')).toHaveTextContent(/required/i)
+    expect(api.updateBoard).not.toHaveBeenCalled()
+  })
+
   it('surfaces a save error from the API', async () => {
     api.updateBoard.mockRejectedValue(new Error('Network error'))
     useBoardStore.setState({ board: { _id: 'b1', name: 'Old Name', description: '' } })

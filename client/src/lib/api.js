@@ -2,7 +2,8 @@
 // All API calls go through this module. Components should call the Zustand
 // store actions, not this directly — keeps fetch details out of the UI.
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+// Normalize trailing slashes so VITE_API_URL=http://x/ doesn't yield http://x//api/...
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '')
 
 // Helper that throws a typed error when the response is not OK
 const request = async (path, options = {}) => {

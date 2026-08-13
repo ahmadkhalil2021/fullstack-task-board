@@ -27,7 +27,6 @@ const BoardPage = () => {
   const board = useBoardStore(s => s.board)
   const isLoading = useBoardStore(s => s.isLoading)
   const error = useBoardStore(s => s.error)
-  const clearError = useBoardStore(s => s.clearError)
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const updateTask = useBoardStore(s => s.updateTask)
   const reorderTasksInColumn = useBoardStore(s => s.reorderTasksInColumn)
@@ -129,7 +128,13 @@ const BoardPage = () => {
         <div role="alert" className="bg-red-100 dark:bg-red-900 border-b border-red-300 dark:border-red-700 px-6 py-3 text-red-800 dark:text-red-100">
           <div className="flex items-center justify-between">
             <p>{error}</p>
-            <button onClick={clearError} aria-label="Dismiss error">×</button>
+            <button
+              onClick={() => useBoardStore.getState().clearError()}
+              aria-label="Dismiss error"
+              className="min-h-[44px] min-w-[44px] p-3 flex items-center justify-center rounded hover:bg-red-200 dark:hover:bg-red-800"
+            >
+              ×
+            </button>
           </div>
         </div>
       )}
