@@ -9,7 +9,24 @@ export default {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+      },
+      transitionDuration: {
+        DEFAULT: '150ms',
+      },
+      keyframes: {
+        'fade-in': {
+          from: { opacity: '0', transform: 'translateY(4px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 200ms ease-out',
+      },
+    },
   },
   plugins: [],
 }
