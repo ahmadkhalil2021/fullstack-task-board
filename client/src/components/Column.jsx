@@ -27,7 +27,7 @@ const Column = ({ status, tasks, onTaskClick, onAddTask, isAddingTask }) => {
           {tasks.length}
         </span>
       </div>
-      <div className="flex flex-col gap-2 overflow-y-auto scrollbar-thin min-h-[100px]">
+      <div className="flex flex-col gap-2 overflow-y-auto scrollbar-hide min-h-[100px]">
         {tasks.map((task) => (
           <TaskCard key={task._id} task={task} onClick={onTaskClick} />
         ))}
