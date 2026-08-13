@@ -19,15 +19,16 @@ const Column = ({ status, tasks, onTaskClick, onAddTask, isAddingTask }) => {
           : 'bg-gray-100 dark:bg-gray-900'
       }`}
     >
-      <div className="flex items-center justify-between px-2 py-1 mb-2 sticky top-0 bg-inherit">
-        <h2 className="font-semibold text-sm uppercase tracking-wide text-gray-700 dark:text-gray-300">
-          {status}
-        </h2>
-        <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 rounded-full px-2 py-0.5 min-w-[24px] text-center">
-          {tasks.length}
-        </span>
-      </div>
-      <div className="flex flex-col gap-2 overflow-y-auto scrollbar-hide min-h-[100px]">
+      <div className="flex flex-col gap-2 overflow-y-auto scrollbar-hide flex-1 min-h-[100px]">
+        {/* Header lives inside the scroll container so sticky has a scrolling ancestor to engage against */}
+        <div className="flex items-center justify-between px-2 py-1 mb-2 sticky top-0 bg-inherit">
+          <h2 className="font-semibold text-sm uppercase tracking-wide text-gray-700 dark:text-gray-300">
+            {status}
+          </h2>
+          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 rounded-full px-2 py-0.5 min-w-[24px] text-center">
+            {tasks.length}
+          </span>
+        </div>
         {tasks.map((task) => (
           <TaskCard key={task._id} task={task} onClick={onTaskClick} />
         ))}

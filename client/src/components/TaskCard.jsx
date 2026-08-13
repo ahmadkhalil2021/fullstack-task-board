@@ -25,8 +25,9 @@ const TaskCard = ({ task, onClick }) => {
     if (!isDragging) onClick(task)
   }
 
+  // Only Enter opens the card — Space must stay free for dnd-kit's KeyboardSensor pickup/drop
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Enter') {
       e.preventDefault()
       if (!isDragging) onClick?.(task)
     }
