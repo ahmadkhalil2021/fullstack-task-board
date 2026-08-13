@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useBoardStore } from '../store/useBoardStore.js'
 import ThemeToggle from './ThemeToggle.jsx'
 import StatusManager from './StatusManager.jsx'
+import ActivityFeed from './ActivityFeed.jsx'
 
 const BoardHeader = () => {
   const board = useBoardStore(s => s.board)
@@ -16,6 +17,7 @@ const BoardHeader = () => {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [statusManagerOpen, setStatusManagerOpen] = useState(false)
+  const [isActivityOpen, setIsActivityOpen] = useState(false)
 
   // Sync only on board identity change: syncing on name/description would
   // clobber the user's in-progress edits when the store rolls back after a failed save.
@@ -92,6 +94,14 @@ const BoardHeader = () => {
       <div className="flex items-center gap-2">
         <button
           type="button"
+          onClick={() => setIsActivityOpen(true)}
+          aria-label="Show activity feed"
+          className="min-h-[44px] min-w-[44px] p-2 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+        >
+          🕘
+        </button>
+        <button
+          type="button"
           onClick={() => setStatusManagerOpen(true)}
           aria-label="Manage board statuses"
           className="min-h-[44px] min-w-[44px] p-2 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
@@ -104,6 +114,7 @@ const BoardHeader = () => {
       {statusManagerOpen && (
         <StatusManager isOpen={statusManagerOpen} onClose={() => setStatusManagerOpen(false)} />
       )}
+      <ActivityFeed isOpen={isActivityOpen} onClose={() => setIsActivityOpen(false)} />
     </header>
   )
 }

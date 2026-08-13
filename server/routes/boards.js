@@ -6,12 +6,44 @@
 import express from 'express'
 import Board from '../models/Board.js'
 import Task from '../models/Task.js'
+import { emitActivity } from '../models/Activity.js'
 import { notFound, validationError } from '../lib/errors.js'
 
 const router = express.Router()
 
 // Default statuses for a new board (matches the Kanban workflow)
 const DEFAULT_STATUSES = ['Backlog', 'Ready', 'In progress', 'In review', 'Done']
+
+// Diff status arrays to infer add/rename/remove events. Same-index changes
+// are treated as renames; extra items appended to the tail are added; items
+// dropped from the tail are removed. (A full reorder surfaces as renames —
+// acceptable for a simple audit trail.)
+const emitStatusChanges = async (boardId, oldStatuses, newStatuses) => {
+  const shared = Math.min(oldStatuses.length, newStatuses.length)
+  for (let i = 0; i < shared; i++) {
+    if (oldStatuses[i] !== newStatuses[i]) {
+      await emitActivity({
+        boardId,
+        type: 'status_renamed',
+        changes: { status: { from: oldStatuses[i], to: newStatuses[i] } },
+      })
+    }
+  }
+  for (let i = shared; i < newStatuses.length; i++) {
+    await emitActivity({
+      boardId,
+      type: 'status_added',
+      changes: { status: { to: newStatuses[i] } },
+    })
+  }
+  for (let i = shared; i < oldStatuses.length; i++) {
+    await emitActivity({
+      boardId,
+      type: 'status_removed',
+      changes: { status: { from: oldStatuses[i] } },
+    })
+  }
+}
 
 // GET /api/boards/:boardId
 // Returns the board with its tasks populated (full task objects, not just IDs)
@@ -100,13 +132,34 @@ router.put('/:boardId', async (req, res, next) => {
       throw validationError('No fields to update')
     }
 
+    // Load the previous document so we can diff against it for the activity feed
+    const oldBoard = await Board.findById(req.params.boardId)
+    if (!oldBoard) throw notFound('Board not found')
+
     const board = await Board.findByIdAndUpdate(
       req.params.boardId,
       update,
       { new: true, runValidators: true }
     ).populate('tasks')
 
-    if (!board) throw notFound('Board not found')
+    if (name !== undefined && name !== oldBoard.name) {
+      await emitActivity({
+        boardId: board._id,
+        type: 'board_updated',
+        changes: { name: { from: oldBoard.name, to: board.name } },
+      })
+    }
+    if (description !== undefined && description !== oldBoard.description) {
+      await emitActivity({
+        boardId: board._id,
+        type: 'board_updated',
+        changes: { description: { from: oldBoard.description, to: board.description } },
+      })
+    }
+    if (statuses !== undefined) {
+      await emitStatusChanges(board._id, oldBoard.statuses, board.statuses)
+    }
+
     res.json({ data: { board } })
   } catch (err) {
     next(err)

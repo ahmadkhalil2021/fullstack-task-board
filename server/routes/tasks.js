@@ -6,6 +6,7 @@
 import express from 'express'
 import Task from '../models/Task.js'
 import Board from '../models/Board.js'
+import { emitActivity } from '../models/Activity.js'
 import { notFound, validationError } from '../lib/errors.js'
 
 const router = express.Router()
@@ -44,6 +45,13 @@ router.post('/', async (req, res, next) => {
     board.tasks.push(task._id)
     await board.save()
 
+    await emitActivity({
+      boardId: board._id,
+      type: 'task_created',
+      taskId: task._id,
+      taskName: task.name,
+    })
+
     res.status(201).json({ data: { task } })
   } catch (err) {
     next(err)
@@ -68,15 +76,17 @@ router.put('/:taskId', async (req, res, next) => {
       throw validationError('No fields to update')
     }
 
-    // If status is being changed, find the parent board and validate
-    if (status !== undefined) {
-      const board = await Board.findOne({ tasks: req.params.taskId })
-      if (!board) throw notFound('Parent board not found')
-      if (!board.statuses.includes(status)) {
-        throw validationError(
-          `Status "${status}" is not in the board's allowed statuses: ${board.statuses.join(', ')}`
-        )
-      }
+    const oldTask = await Task.findById(req.params.taskId)
+    if (!oldTask) throw notFound('Task not found')
+
+    const board = await Board.findOne({ tasks: req.params.taskId })
+    if (!board) throw notFound('Parent board not found')
+
+    // If status is being changed, validate against the board's statuses
+    if (status !== undefined && !board.statuses.includes(status)) {
+      throw validationError(
+        `Status "${status}" is not in the board's allowed statuses: ${board.statuses.join(', ')}`
+      )
     }
 
     // Apply the update. `new: true` returns the updated document.
@@ -86,7 +96,36 @@ router.put('/:taskId', async (req, res, next) => {
       update,
       { new: true, runValidators: true }
     )
-    if (!task) throw notFound('Task not found')
+
+    if (status !== undefined && status !== oldTask.status) {
+      await emitActivity({
+        boardId: board._id,
+        type: 'task_moved',
+        taskId: task._id,
+        taskName: task.name,
+        changes: { status: { from: oldTask.status, to: task.status } },
+      })
+    }
+
+    const fieldChanges = {}
+    if (name !== undefined && name !== oldTask.name) {
+      fieldChanges.name = { from: oldTask.name, to: task.name }
+    }
+    if (description !== undefined && description !== oldTask.description) {
+      fieldChanges.description = { from: oldTask.description, to: task.description }
+    }
+    if (icon !== undefined && icon !== oldTask.icon) {
+      fieldChanges.icon = { from: oldTask.icon, to: task.icon }
+    }
+    if (Object.keys(fieldChanges).length > 0) {
+      await emitActivity({
+        boardId: board._id,
+        type: 'task_updated',
+        taskId: task._id,
+        taskName: task.name,
+        changes: fieldChanges,
+      })
+    }
 
     res.json({ data: { task } })
   } catch (err) {
@@ -122,12 +161,22 @@ router.delete('/:taskId', async (req, res, next) => {
     const task = await Task.findByIdAndDelete(req.params.taskId)
     if (!task) throw notFound('Task not found')
 
-    // Remove the task reference from the parent board
-    // $pull removes all matching values from the array
-    await Board.updateOne(
+    // Remove the task reference from the parent board and capture the board
+    // so we can record the deletion against it. $pull removes all matches.
+    const board = await Board.findOneAndUpdate(
       { tasks: req.params.taskId },
-      { $pull: { tasks: req.params.taskId } }
+      { $pull: { tasks: req.params.taskId } },
+      { new: true }
     )
+
+    if (board) {
+      await emitActivity({
+        boardId: board._id,
+        type: 'task_deleted',
+        taskId: task._id,
+        taskName: task.name,
+      })
+    }
 
     res.json({ data: { message: 'Task deleted' } })
   } catch (err) {
