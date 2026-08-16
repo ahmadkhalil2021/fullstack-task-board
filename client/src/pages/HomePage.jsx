@@ -44,12 +44,12 @@ const HomePage = () => {
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center gap-4 animate-fade-in">
+      <div className="min-h-screen bg-surface-subtle text-surface-text flex flex-col items-center justify-center gap-4 animate-fade-in">
         <h1 className="text-xl font-semibold">Couldn't create your board</h1>
-        <p role="alert" className="text-red-600 dark:text-red-400">{error}</p>
+        <p role="alert" className="text-danger-text">{error}</p>
         <button
           onClick={handleRetry}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+          className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
         >
           Try again
         </button>
@@ -58,9 +58,9 @@ const HomePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center gap-4 animate-fade-in">
-      <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      <p role="status" aria-live="polite" className="text-gray-600 dark:text-gray-400">Creating your board…</p>
+    <div className="min-h-screen bg-surface-subtle text-surface-text flex flex-col items-center justify-center gap-4 animate-fade-in">
+      <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <p role="status" aria-live="polite" className="text-surface-text-muted">Creating your board…</p>
     </div>
   )
 }

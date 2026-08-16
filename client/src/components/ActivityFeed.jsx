@@ -105,18 +105,18 @@ const ActivityFeed = ({ isOpen, onClose }) => {
         onClick={onClose}
       />
       <aside
-        className={`fixed inset-y-0 right-0 z-50 flex w-80 max-w-[85vw] transform flex-col border-l border-gray-200 bg-white shadow-xl transition-transform duration-300 dark:border-gray-700 dark:bg-gray-900 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 z-50 flex w-80 max-w-[85vw] transform flex-col border-l border-surface-border bg-surface-overlay shadow-card-hover transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         role="complementary"
         aria-label="Activity feed"
         aria-hidden={!isOpen}
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Activity</h2>
+        <div className="flex items-center justify-between border-b border-surface-border px-4 py-3">
+          <h2 className="text-lg font-semibold text-surface-text">Activity</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close activity feed"
-            className="min-h-[44px] min-w-[44px] rounded p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-gray-300 dark:hover:bg-gray-800"
+            className="min-h-[44px] min-w-[44px] rounded p-2 text-surface-text-muted hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
           >
             ✕
           </button>
@@ -127,10 +127,10 @@ const ActivityFeed = ({ isOpen, onClose }) => {
             <div role="status" aria-label="Loading activity" className="space-y-3">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-surface-muted" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-3 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-                    <div className="h-3 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-3 animate-pulse rounded bg-surface-muted" />
+                    <div className="h-3 w-2/3 animate-pulse rounded bg-surface-muted" />
                   </div>
                 </div>
               ))}
@@ -138,7 +138,7 @@ const ActivityFeed = ({ isOpen, onClose }) => {
           )}
 
           {!activityLoading && activity.length === 0 && !activityError && (
-            <div className="flex h-full flex-col items-center justify-center py-16 text-center text-gray-500 dark:text-gray-400">
+            <div className="flex h-full flex-col items-center justify-center py-16 text-center text-surface-text-subtle">
               <p className="text-2xl" aria-hidden="true">📭</p>
               <p className="mt-2 text-sm">No activity yet — make a move!</p>
             </div>
@@ -146,13 +146,13 @@ const ActivityFeed = ({ isOpen, onClose }) => {
 
           {activityError && (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
-              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+              <p role="alert" className="text-sm text-danger">
                 Could not load activity: {activityError}
               </p>
               <button
                 type="button"
                 onClick={retry}
-                className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="rounded bg-primary px-4 py-2 text-sm text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
               >
                 Retry
               </button>
@@ -167,10 +167,10 @@ const ActivityFeed = ({ isOpen, onClose }) => {
                     {ICONS[item.type] || '•'}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-900 dark:text-gray-100">
+                    <p className="text-sm text-surface-text">
                       {describeActivity(item)}
                     </p>
-                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-0.5 text-xs text-surface-text-subtle">
                       {formatRelativeTime(item.createdAt, now)}
                     </p>
                   </div>
@@ -183,7 +183,7 @@ const ActivityFeed = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={loadMore}
-              className="mt-4 w-full rounded px-4 py-2 text-sm text-blue-600 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400 dark:hover:bg-gray-800"
+              className="mt-4 w-full rounded border border-surface-border px-4 py-2 text-sm text-primary hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               Load more
             </button>

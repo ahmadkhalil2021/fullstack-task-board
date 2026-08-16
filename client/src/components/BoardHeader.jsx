@@ -59,8 +59,8 @@ const BoardHeader = () => {
   }
 
   return (
-    <header className="flex items-start justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 transition-colors duration-150">
-      <div className="flex-1">
+    <header className="flex items-start justify-between gap-4 px-4 sm:px-6 py-4 border-b border-surface-border bg-surface-raised transition-colors duration-200">
+      <div className="flex-1 min-w-0 max-w-2xl">
         <input
           type="text"
           value={draftName}
@@ -68,7 +68,7 @@ const BoardHeader = () => {
           onBlur={save}
           disabled={saving}
           aria-label="Board name"
-          className="w-full text-xl sm:text-2xl font-bold bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1 text-gray-900 dark:text-gray-100"
+          className="w-full text-xl sm:text-2xl font-bold bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle rounded px-1 text-surface-text"
           placeholder="Board name"
         />
         <input
@@ -78,25 +78,25 @@ const BoardHeader = () => {
           onBlur={save}
           disabled={saving}
           aria-label="Board description"
-          className="w-full mt-1 text-sm bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded px-1 text-gray-600 dark:text-gray-400"
+          className="w-full mt-1 text-sm bg-transparent border-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle rounded px-1 text-surface-text-muted"
           placeholder="Add a description..."
         />
         {(saving || saveError) && (
           <p
             role={saveError ? 'alert' : 'status'}
             aria-live={saveError ? 'assertive' : 'polite'}
-            className={`text-sm mt-1 transition-colors duration-150 ${saveError ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}
+            className={`text-sm mt-1 transition-colors duration-200 ${saveError ? 'text-danger' : 'text-surface-text-subtle'}`}
           >
             {saveError || 'Saving...'}
           </p>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-muted border border-surface-border shrink-0">
         <button
           type="button"
           onClick={() => setIsActivityOpen(true)}
           aria-label="Show activity feed"
-          className="min-h-[44px] min-w-[44px] p-2 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+          className="min-h-[40px] min-w-[40px] p-2 rounded text-surface-text-muted hover:bg-surface-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
         >
           🕘
         </button>
@@ -104,7 +104,7 @@ const BoardHeader = () => {
           type="button"
           onClick={() => setStatusManagerOpen(true)}
           aria-label="Manage board statuses"
-          className="min-h-[44px] min-w-[44px] p-2 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+          className="min-h-[40px] min-w-[40px] p-2 rounded text-surface-text-muted hover:bg-surface-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
         >
           ⚙
         </button>

@@ -1,10 +1,11 @@
 // TaskCard.jsx — Sortable + draggable card for a single task
 // Click to open the edit modal. Drag to move or reorder.
-// The dashboard shows a compact view (truncated description, fixed height).
-// The full description is shown in the TaskForm modal.
+// Each card carries a left status-color stripe so the user can read its
+// status at a glance even when columns aren't visible (e.g. grid view).
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { statusColor } from '../lib/statusColor.js'
 
 const TaskCard = ({ task, onClick }) => {
   const {
@@ -33,6 +34,8 @@ const TaskCard = ({ task, onClick }) => {
     }
   }
 
+  const stripe = statusColor(task.status)
+
   return (
     <div
       ref={setNodeRef}
@@ -45,19 +48,23 @@ const TaskCard = ({ task, onClick }) => {
       role="button"
       aria-label={`Edit task: ${task.name}`}
       data-task-id={task._id}
-      className={`bg-white dark:bg-gray-800 rounded-md p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 animate-fade-in transition-all duration-150 cursor-grab active:cursor-grabbing touch-none h-32 flex flex-col ${
+      data-status-color={stripe}
+      className={`group bg-surface-raised rounded-card pl-3 pr-3 py-3 shadow-card border border-surface-border hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle animate-fade-in transition-all duration-200 cursor-grab active:cursor-grabbing touch-none min-h-24 flex flex-col relative overflow-hidden ${
         isDragging ? 'opacity-30' : ''
       }`}
     >
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-1 bg-status-${stripe}`}
+      />
       <div className="flex items-start gap-2 flex-1 min-h-0">
         <span className="text-2xl shrink-0" aria-hidden="true">{task.icon}</span>
         <div className="flex-1 min-w-0 flex flex-col">
-          <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+          <h3 className="font-medium text-surface-text truncate">
             {task.name}
           </h3>
           {task.description && (
-            // line-clamp-3 keeps the card at a fixed height regardless of description length
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+            <p className="mt-1 text-sm text-surface-text-muted line-clamp-3">
               {task.description}
             </p>
           )}
