@@ -5,7 +5,7 @@ const AddTaskButton = ({ onClick, disabled }) => (
     type="button"
     onClick={onClick}
     disabled={disabled}
-    className="mt-3 w-full rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+    className="mt-3 w-full rounded-lg border-2 border-dashed border-surface-border-strong px-4 py-2 text-sm font-medium text-surface-text-muted hover:bg-surface-raised hover:border-surface-border focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
   >
     + Add new task
   </button>
