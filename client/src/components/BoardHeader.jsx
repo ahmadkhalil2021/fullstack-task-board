@@ -6,9 +6,14 @@ import { useEffect, useState } from 'react'
 import { useBoardStore } from '../store/useBoardStore.js'
 import ThemeToggle from './ThemeToggle.jsx'
 import StatusManager from './StatusManager.jsx'
-import ActivityFeed from './ActivityFeed.jsx'
 
-const BoardHeader = () => {
+const ActivityIcon = () => (
+  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 12h4l3-9 4 18 3-9h4" />
+  </svg>
+)
+
+const BoardHeader = ({ isActivityOpen = false, onActivityToggle }) => {
   const board = useBoardStore(s => s.board)
   const updateBoard = useBoardStore(s => s.updateBoard)
 
@@ -17,7 +22,6 @@ const BoardHeader = () => {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [statusManagerOpen, setStatusManagerOpen] = useState(false)
-  const [isActivityOpen, setIsActivityOpen] = useState(false)
 
   // Sync only on board identity change: syncing on name/description would
   // clobber the user's in-progress edits when the store rolls back after a failed save.
@@ -59,7 +63,7 @@ const BoardHeader = () => {
   }
 
   return (
-    <header className="flex items-start justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 transition-colors duration-150">
+    <header className="glass-surface flex items-start justify-between px-4 sm:px-6 py-4 border border-white/40 dark:border-white/10 rounded-2xl bg-white/70 dark:bg-gray-950/70 backdrop-blur-md shadow-glass dark:shadow-glass-dark transition-colors duration-150">
       <div className="flex-1">
         <input
           type="text"
@@ -94,19 +98,22 @@ const BoardHeader = () => {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => setIsActivityOpen(true)}
-          aria-label="Show activity feed"
-          className="min-h-[44px] min-w-[44px] p-2 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+          onClick={onActivityToggle}
+          aria-label={isActivityOpen ? 'Hide activity feed' : 'Show activity feed'}
+          aria-expanded={isActivityOpen}
+          aria-controls="activity-feed-panel"
+          title={isActivityOpen ? 'Hide activity' : 'Show activity'}
+          className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl p-2 text-gray-700 transition-colors duration-150 hover:bg-white/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-gray-300 dark:hover:bg-white/10 ${isActivityOpen ? 'bg-white/70 text-blue-600 dark:bg-white/10 dark:text-blue-400' : ''}`}
         >
-          🕘
+          <ActivityIcon />
         </button>
         <button
           type="button"
           onClick={() => setStatusManagerOpen(true)}
           aria-label="Manage board statuses"
-          className="min-h-[44px] min-w-[44px] p-2 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+          className="min-h-[44px] rounded-xl border border-white/40 bg-white/50 px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-white/10 dark:bg-white/10 dark:text-gray-200 dark:hover:bg-white/20"
         >
-          ⚙
+          Manage stages
         </button>
         <ThemeToggle />
       </div>
@@ -114,7 +121,6 @@ const BoardHeader = () => {
       {statusManagerOpen && (
         <StatusManager isOpen={statusManagerOpen} onClose={() => setStatusManagerOpen(false)} />
       )}
-      <ActivityFeed isOpen={isActivityOpen} onClose={() => setIsActivityOpen(false)} />
     </header>
   )
 }
