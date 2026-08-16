@@ -21,7 +21,7 @@ const ThemeToggle = () => {
     <button
       type="button"
       onClick={next}
-      aria-label={`Theme: ${theme}`}
+      aria-label={`Theme: ${theme}. Activate to use ${THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]} theme`}
       className="text-xl leading-none p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
       {ICONS[theme]}

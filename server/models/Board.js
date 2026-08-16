@@ -47,6 +47,9 @@ boardSchema.pre('deleteOne', { document: true }, async function () {
   // a circular dependency: Board depends on Task, but Task does not depend on Board.
   const Task = mongoose.model('Task')
   await Task.deleteMany({ _id: { $in: this.tasks } })
+  // Activities are orphaned without their board, so remove them too.
+  const Activity = mongoose.model('Activity')
+  await Activity.deleteMany({ boardId: this._id })
 })
 
 const Board = mongoose.model('Board', boardSchema)

@@ -45,10 +45,16 @@ const TaskForm = ({ task, onClose }) => {
   const [status, setStatus] = useState(task.status)
   const [isSaving, setIsSaving] = useState(false)
   const nameRef = useRef(null)
+  const previousFocus = useRef(document.activeElement)
 
   useEffect(() => {
     nameRef.current?.focus()
     nameRef.current?.select()
+  }, [])
+
+  useEffect(() => {
+    const focusTarget = previousFocus.current
+    return () => focusTarget?.focus?.()
   }, [])
 
   useEffect(() => {
@@ -94,10 +100,26 @@ const TaskForm = ({ task, onClose }) => {
   return (
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md flex items-center justify-center p-4"
+      role="presentation"
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Edit task</h2>
+      <div
+        className="glass-surface bg-white/85 dark:bg-gray-800/85 backdrop-blur-lg border border-white/40 dark:border-white/10 rounded-2xl shadow-glass dark:shadow-glass-dark w-full max-w-2xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="task-form-title"
+      >
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <h2 id="task-form-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit task</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close task editor"
+            className="min-h-11 min-w-11 -mr-2 -mt-2 rounded text-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            ×
+          </button>
+        </div>
 
         {/* Name */}
         <label className="block mb-3">
@@ -131,7 +153,9 @@ const TaskForm = ({ task, onClose }) => {
                 key={i}
                 type="button"
                 onClick={() => setIcon(i)}
-                className={`text-2xl p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 ${i === icon ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500' : ''}`}
+                aria-label={`Use ${i} icon`}
+                aria-pressed={i === icon}
+                className={`min-h-11 min-w-11 text-2xl p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${i === icon ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500' : ''}`}
               >
                 {i}
               </button>

@@ -47,3 +47,11 @@ export const deleteTask = (taskId) =>
 export const createTask = (data) =>
   request('/tasks', { method: 'POST', body: JSON.stringify(data) })
     .then((res) => res.data.task)
+
+export const fetchActivity = (boardId, { limit = 50, before } = {}) => {
+  const params = new URLSearchParams()
+  params.set('limit', String(limit))
+  if (before) params.set('before', before)
+  return request(`/boards/${boardId}/activity?${params.toString()}`)
+    .then((res) => res.data)
+}
