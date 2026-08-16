@@ -21,7 +21,7 @@ const Column = ({ status, tasks, onTaskClick, onAddTask, isAddingTask }) => {
     >
       <div className="flex flex-col gap-2 overflow-y-auto scrollbar-hide flex-1 min-h-[100px]">
         {/* Header lives inside the scroll container so sticky has a scrolling ancestor to engage against */}
-        <div className="flex items-center justify-between px-2 py-1 mb-2 sticky top-0 bg-gray-100/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-[0_4px_8px_-4px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center justify-between px-2 py-1 mb-2 sticky top-0 bg-inherit">
           <h2 className="font-semibold text-sm uppercase tracking-wide text-gray-700 dark:text-gray-300">
             {status}
           </h2>

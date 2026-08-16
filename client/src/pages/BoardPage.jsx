@@ -21,7 +21,6 @@ import Column from '../components/Column.jsx'
 import TaskForm from '../components/TaskForm.jsx'
 import TaskCard from '../components/TaskCard.jsx'
 import EmptyBoard from '../components/EmptyBoard.jsx'
-import ActivityFeed from '../components/ActivityFeed.jsx'
 
 const BoardPage = () => {
   const { boardId } = useParams()
@@ -36,7 +35,6 @@ const BoardPage = () => {
   const [editingTask, setEditingTask] = useState(null)
   const [draggingTask, setDraggingTask] = useState(null)
   const [isAddingTask, setIsAddingTask] = useState(false)
-  const [isActivityOpen, setIsActivityOpen] = useState(false)
   // Synchronous guard so two rapid clicks can't both start a create before
   // the `isAddingTask` state re-render disables the button.
   const hasStarted = useRef(false)
@@ -118,8 +116,7 @@ const BoardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="relative isolate min-h-screen flex flex-col">
-        <Atmosphere />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
         <div className="flex gap-4 p-6 overflow-x-auto" aria-hidden="true">
           {[0, 1, 2].map((i) => (
             <div
@@ -142,8 +139,7 @@ const BoardPage = () => {
   }
 
   return (
-    <div className="relative isolate min-h-screen flex flex-col">
-      <Atmosphere />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       {error && (
         <div role="alert" className="bg-red-100 dark:bg-red-900 border-b border-red-300 dark:border-red-700 px-6 py-3 text-red-800 dark:text-red-100">
           <div className="flex items-center justify-between">
@@ -163,22 +159,14 @@ const BoardPage = () => {
         <EmptyBoard message="No board loaded" />
       ) : (
         <>
-           <BoardHeader
-             isActivityOpen={isActivityOpen}
-             onActivityToggle={() => setIsActivityOpen((open) => !open)}
-           />
-           <ActivityFeed
-             id="activity-feed-panel"
-             isOpen={isActivityOpen}
-             onClose={() => setIsActivityOpen(false)}
-           />
+          <BoardHeader />
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <main id="main-content" className="flex-1 p-6 overflow-x-auto">
+            <main className="flex-1 p-6 overflow-x-auto">
               {board.statuses.length === 0 ? (
                 <EmptyBoard message="No columns defined for this board" />
               ) : (
@@ -220,16 +208,5 @@ const BoardPage = () => {
     </div>
   )
 }
-
-const Atmosphere = () => (
-  <div
-    className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-950 dark:via-indigo-950 dark:to-purple-950"
-    aria-hidden="true"
-  >
-    <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl dark:bg-blue-900/30" />
-    <div className="absolute right-1/4 top-1/3 h-96 w-96 rounded-full bg-purple-200/30 blur-3xl dark:bg-purple-900/25" />
-    <div className="absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-pink-200/30 blur-3xl dark:bg-pink-900/20" />
-  </div>
-)
 
 export default BoardPage

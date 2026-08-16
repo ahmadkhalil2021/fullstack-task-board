@@ -21,7 +21,7 @@ const TaskCard = ({ task, onClick }) => {
     transition,
   }
 
-  const handleClick = () => {
+  const handleClick = (e) => {
     if (!isDragging) onClick(task)
   }
 
@@ -45,7 +45,7 @@ const TaskCard = ({ task, onClick }) => {
       role="button"
       aria-label={`Edit task: ${task.name}`}
       data-task-id={task._id}
-       className={`bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 animate-fade-in transition-all duration-150 cursor-grab active:cursor-grabbing touch-none h-32 flex flex-col ${
+      className={`bg-white dark:bg-gray-800 rounded-md p-3 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 animate-fade-in transition-all duration-150 cursor-grab active:cursor-grabbing touch-none h-32 flex flex-col ${
         isDragging ? 'opacity-30' : ''
       }`}
     >
