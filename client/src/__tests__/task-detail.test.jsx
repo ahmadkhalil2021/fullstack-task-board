@@ -1,4 +1,4 @@
-// __tests__/task-detail.test.jsx — Dedicated task page: fields, save, delete, navigation.
+// __tests__/task-detail.test.jsx — Odoo-style task form: fields, statusbar, save, delete, navigation.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
@@ -79,19 +79,23 @@ beforeEach(() => {
 })
 
 describe('TaskDetailPage', () => {
-  it('renders the task fields and meta information', () => {
+  it('renders the task fields, statusbar and meta information', () => {
     renderDetail()
-    expect(screen.getByRole('heading', { name: 'Edit task' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
     expect(screen.getByLabelText('Name')).toHaveValue('Fix login')
     expect(screen.getByLabelText('Description')).toHaveValue('Auth flow')
-    expect(screen.getByLabelText('Status')).toHaveValue('In Progress')
-    expect(screen.getByText(/Created .* · Updated/)).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'In Progress' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'Completed' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByText(/^Created /)).toBeInTheDocument()
+    expect(screen.getByText(/^Last updated /)).toBeInTheDocument()
   })
 
-  it('lists the board statuses in the status select', () => {
+  it('lists the board statuses in the statusbar', () => {
     renderDetail()
-    const options = screen.getAllByRole('option').map((option) => option.textContent)
-    expect(options).toEqual(['In Progress', 'Completed'])
+    const stages = screen
+      .getAllByRole('radio')
+      .map((node) => node.textContent.replace(/[^A-Za-z ]/g, '').trim())
+    expect(stages).toEqual(['In Progress', 'Completed'])
   })
 
   it('disables Save until something changes, then saves and confirms', async () => {
@@ -115,6 +119,35 @@ describe('TaskDetailPage', () => {
       )
     })
     expect(await screen.findByText('Saved')).toBeInTheDocument()
+  })
+
+  it('applies a clicked statusbar stage on save', async () => {
+    const user = userEvent.setup()
+    api.updateTask.mockImplementation((id, data) => Promise.resolve({ ...task, ...data }))
+    renderDetail()
+
+    await user.click(screen.getByRole('radio', { name: 'Completed' }))
+    expect(screen.getByRole('radio', { name: 'Completed' })).toHaveAttribute('aria-checked', 'true')
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(api.updateTask).toHaveBeenCalledWith(
+        't1',
+        expect.objectContaining({ status: 'Completed' })
+      )
+    })
+  })
+
+  it('discards local edits', async () => {
+    const user = userEvent.setup()
+    renderDetail()
+
+    await user.type(screen.getByLabelText('Name'), ' dirty')
+    expect(screen.getByRole('button', { name: 'Discard' })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(screen.getByLabelText('Name')).toHaveValue('Fix login')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
 
   it('disables Save when the name is empty', async () => {
@@ -175,10 +208,7 @@ describe('TaskDetailPage', () => {
 
   it('links back to the board by default', () => {
     renderDetail()
-    expect(screen.getByRole('link', { name: /Back to board/ })).toHaveAttribute(
-      'href',
-      '/board/b1'
-    )
+    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/board/b1')
   })
 
   it('links back to the originating view and filters when provided', () => {
@@ -186,7 +216,7 @@ describe('TaskDetailPage', () => {
       entry: '/board/b1/task/t1',
       state: { from: '/board/b1/list?q=login&f=in-progress' },
     })
-    expect(screen.getByRole('link', { name: /Back to board/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute(
       'href',
       '/board/b1/list?q=login&f=in-progress'
     )

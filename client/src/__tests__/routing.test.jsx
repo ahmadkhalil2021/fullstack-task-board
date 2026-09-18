@@ -124,8 +124,8 @@ describe('routing', () => {
       activityError: null,
     })
     renderAt('/board/abc-123/task/t1')
-    expect(screen.getByRole('heading', { name: 'Edit task' })).toBeInTheDocument()
-    expect(screen.getByDisplayValue('T1')).toBeInTheDocument()
+    expect(screen.getByLabelText('Name')).toHaveValue('T1')
+    expect(screen.getByRole('link', { name: 'Test Board' })).toHaveAttribute('href', '/board/abc-123')
   })
 })
 
