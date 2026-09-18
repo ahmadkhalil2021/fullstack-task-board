@@ -66,7 +66,6 @@ const renderDetail = ({ entry = '/board/b1/task/t1', state, storeBoard = board }
     [
       { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
       { path: '/board/:boardId', element: <div>BOARD PAGE</div> },
-      { path: '/board/:boardId/list', element: <div>BOARD LIST PAGE</div> },
     ],
     { initialEntries: [state ? { pathname: entry, state } : entry] }
   )
@@ -214,11 +213,11 @@ describe('TaskDetailPage', () => {
   it('links back to the originating view and filters when provided', () => {
     renderDetail({
       entry: '/board/b1/task/t1',
-      state: { from: '/board/b1/list?q=login&f=in-progress' },
+      state: { from: '/board/b1/table?q=login&f=in-progress' },
     })
     expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute(
       'href',
-      '/board/b1/list?q=login&f=in-progress'
+      '/board/b1/table?q=login&f=in-progress'
     )
   })
 

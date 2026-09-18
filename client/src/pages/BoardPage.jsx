@@ -1,6 +1,6 @@
-// BoardPage.jsx — Board shell for "/board/:boardId" (Kanban) and
-// "/board/:boardId/list" (List). Owns board loading, the shared header and
-// search, view selection, the filter banner and the task modal.
+// BoardPage.jsx — Board shell for "/board/:boardId" (Kanban), "/grid" and
+// "/table". Owns board loading, the shared header and search, view selection,
+// the filter banner and the task modal.
 
 import { useEffect, useMemo } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -10,7 +10,6 @@ import BoardHeader from '../components/BoardHeader.jsx'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 import ViewSwitcher from '../components/ViewSwitcher.jsx'
 import KanbanBoard from '../views/KanbanBoard.jsx'
-import ListView from '../views/ListView.jsx'
 import GridView from '../views/GridView.jsx'
 import TableView from '../views/TableView.jsx'
 import EmptyBoard from '../components/EmptyBoard.jsx'
@@ -110,7 +109,6 @@ const BoardPage = () => {
                 <KanbanBoard key={board._id} onTaskClick={openTask} />
               ) : (
                 <main className="flex-1 p-4 sm:p-6">
-                  {view === 'list' && <ListView key={board._id} onTaskClick={openTask} />}
                   {view === 'grid' && <GridView key={board._id} onTaskClick={openTask} />}
                   {view === 'table' && <TableView key={board._id} onTaskClick={openTask} />}
                 </main>

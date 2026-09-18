@@ -20,7 +20,6 @@ const renderAt = (path) =>
 describe('useView', () => {
   it.each([
     ['/board/b1', 'kanban'],
-    ['/board/b1/list', 'list'],
     ['/board/b1/grid', 'grid'],
     ['/board/b1/table', 'table'],
   ])('maps %s to %s', (path, expected) => {
@@ -29,6 +28,7 @@ describe('useView', () => {
   })
 
   it.each([
+    ['/board/b1/list'],
     ['/board/b1/unknown'],
     ['/board/b1/task/t1'],
     ['/board/b1/list/extra'],

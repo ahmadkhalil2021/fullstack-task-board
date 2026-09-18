@@ -291,7 +291,7 @@ const TaskDetailPage = () => {
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const location = useLocation()
 
-  // Preserve the exact board view (kanban/list + filters) the user came from.
+  // Preserve the exact board view (kanban/grid/table + filters) the user came from.
   const backTo = location.state?.from ?? `/board/${boardId}`
 
   useEffect(() => {

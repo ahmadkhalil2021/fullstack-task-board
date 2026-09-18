@@ -5,7 +5,7 @@
 
 import { useLocation } from 'react-router-dom'
 
-const EXTRA_VIEWS = ['list', 'grid', 'table']
+const EXTRA_VIEWS = ['grid', 'table']
 
 export const useView = () => {
   const { pathname } = useLocation()

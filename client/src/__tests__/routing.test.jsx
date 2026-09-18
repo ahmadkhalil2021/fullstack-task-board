@@ -37,7 +37,6 @@ const renderAt = (path) => {
     [
       { path: '/', element: <HomePage /> },
       { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
-      { path: '/board/:boardId/list', element: <BoardPage /> },
       { path: '/board/:boardId/grid', element: <BoardPage /> },
       { path: '/board/:boardId/table', element: <BoardPage /> },
       { path: '/board/:boardId', element: <BoardPage /> },
@@ -83,26 +82,6 @@ describe('routing', () => {
     renderAt('/some/random/path')
     expect(screen.getByText('404')).toBeInTheDocument()
     expect(screen.getByText(/page not found/i)).toBeInTheDocument()
-  })
-
-  it('renders the List view at /board/:boardId/list', () => {
-    useBoardStore.setState({
-      board: {
-        _id: 'abc-123',
-        name: 'Test Board',
-        description: '',
-        statuses: ['A', 'B'],
-        tasks: [
-          { _id: 't1', name: 'T1', description: '', icon: '⏰', status: 'A' },
-        ],
-      },
-      activity: [],
-      activityLoading: false,
-      activityError: null,
-    })
-    renderAt('/board/abc-123/list')
-    expect(screen.getByRole('link', { name: 'List' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByText('T1')).toBeInTheDocument()
   })
 
   it('renders NotFoundPage for unknown board sub-paths', () => {
