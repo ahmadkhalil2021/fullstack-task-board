@@ -1,7 +1,7 @@
 // __tests__/task-detail.test.jsx — Odoo-style task form: fields, statusbar, save, delete, navigation.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import * as api from '../lib/api.js'
@@ -100,10 +100,54 @@ describe('TaskDetailPage', () => {
 
   it('lists the board statuses in the statusbar', () => {
     renderDetail()
-    const stages = screen
+    const stages = within(screen.getByRole('radiogroup', { name: 'Status' }))
       .getAllByRole('radio')
       .map((node) => node.textContent.replace(/[^A-Za-z ]/g, '').trim())
     expect(stages).toEqual(['In Progress', 'Completed'])
+  })
+
+  it('renders due date and priority controls and saves them', async () => {
+    const user = userEvent.setup()
+    api.updateTask.mockImplementation((id, data) => Promise.resolve({ ...task, ...data }))
+    renderDetail()
+
+    const dueDate = screen.getByLabelText('Due date')
+    expect(dueDate).toHaveValue('')
+    expect(screen.getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
+
+    fireEvent.change(dueDate, { target: { value: '2026-09-15' } })
+    await user.click(screen.getByRole('radio', { name: 'High' }))
+    expect(dueDate).toHaveValue('2026-09-15')
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(api.updateTask).toHaveBeenCalledWith(
+        't1',
+        expect.objectContaining({ dueDate: '2026-09-15', priority: 'high' })
+      )
+    })
+  })
+
+  it('clears a due date by emptying the input', async () => {
+    const user = userEvent.setup()
+    api.updateTask.mockImplementation((id, data) => Promise.resolve({ ...task, ...data }))
+    const datedBoard = {
+      ...board,
+      tasks: [{ ...task, dueDate: '2026-09-15T00:00:00.000Z' }, secondTask],
+    }
+    renderDetail({ storeBoard: datedBoard })
+
+    expect(screen.getByLabelText('Due date')).toHaveValue('2026-09-15')
+    fireEvent.change(screen.getByLabelText('Due date'), { target: { value: '' } })
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(api.updateTask).toHaveBeenCalledWith(
+        't1',
+        expect.objectContaining({ dueDate: null })
+      )
+    })
   })
 
   it('disables Save until something changes, then saves and confirms', async () => {

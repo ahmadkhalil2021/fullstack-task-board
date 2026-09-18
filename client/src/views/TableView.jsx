@@ -7,10 +7,14 @@ import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import StatusBadge from '../components/StatusBadge.jsx'
 import AddTaskButton from '../components/AddTaskButton.jsx'
 import { formatRelativeTime } from '../lib/formatRelativeTime.js'
+import { formatDueDate, isOverdue } from '../lib/dueDate.js'
+import { PRIORITY_RANK, priorityColor, priorityLabel } from '../lib/priority.js'
 
 const COLUMNS = [
   { key: 'name', label: 'Name', align: 'left' },
   { key: 'status', label: 'Status', align: 'left' },
+  { key: 'priority', label: 'Priority', align: 'left' },
+  { key: 'dueDate', label: 'Due date', align: 'right' },
   { key: 'createdAt', label: 'Created', align: 'right' },
   { key: 'updatedAt', label: 'Updated', align: 'right' },
 ]
@@ -39,6 +43,15 @@ const sortValue = (task, key) => {
   if (key === 'createdAt' || key === 'updatedAt') {
     const timestamp = new Date(task[key] ?? task.createdAt).getTime()
     return Number.isNaN(timestamp) ? -Infinity : timestamp
+  }
+  if (key === 'priority') {
+    return PRIORITY_RANK[task.priority] ?? 0
+  }
+  if (key === 'dueDate') {
+    // null marks "no due date" and always sorts last (both directions).
+    if (!task.dueDate) return null
+    const timestamp = new Date(task.dueDate).getTime()
+    return Number.isNaN(timestamp) ? null : timestamp
   }
   return (task[key] ?? '').toString().toLowerCase()
 }
@@ -73,6 +86,10 @@ const TableView = ({ onTaskClick }) => {
     return [...filtered].sort((a, b) => {
       const aValue = sortValue(a, sort.key)
       const bValue = sortValue(b, sort.key)
+      // Null values (no due date) always sort last, independent of direction.
+      if (aValue === null && bValue === null) return a._id.localeCompare(b._id)
+      if (aValue === null) return 1
+      if (bValue === null) return -1
       if (aValue < bValue) return sort.dir === 'asc' ? -1 : 1
       if (aValue > bValue) return sort.dir === 'asc' ? 1 : -1
       // Stable, direction-independent tie-break for equal/invalid values.
@@ -191,6 +208,35 @@ const TableView = ({ onTaskClick }) => {
                 </td>
                 <td className="whitespace-nowrap px-4 py-2">
                   <StatusBadge status={task.status} />
+                </td>
+                <td className="whitespace-nowrap px-4 py-2">
+                  {priorityColor(task.priority) ? (
+                    <span className="inline-flex items-center gap-2 text-surface-text-muted">
+                      <span
+                        aria-hidden="true"
+                        className={`inline-block h-2 w-2 shrink-0 rounded-full bg-priority-${priorityColor(task.priority)}`}
+                      />
+                      {priorityLabel(task.priority)}
+                    </span>
+                  ) : (
+                    <span className="text-surface-text-subtle">—</span>
+                  )}
+                </td>
+                <td className="whitespace-nowrap px-4 py-2 text-right text-xs">
+                  {formatDueDate(task.dueDate) ? (
+                    <span
+                      className={
+                        isOverdue(task.dueDate)
+                          ? 'font-medium text-danger'
+                          : 'text-surface-text-muted'
+                      }
+                    >
+                      {formatDueDate(task.dueDate)}
+                      {isOverdue(task.dueDate) && <span className="sr-only"> (overdue)</span>}
+                    </span>
+                  ) : (
+                    <span className="text-surface-text-subtle">—</span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-4 py-2 text-right text-xs text-surface-text-subtle">
                   {formatRelativeTime(task.createdAt, now)}

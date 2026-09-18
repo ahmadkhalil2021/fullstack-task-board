@@ -36,6 +36,20 @@ const taskSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  // Optional deadline. `null` means no due date. Indexed because the
+  // calendar view (#29) and due-date sorting will query it.
+  dueDate: {
+    type: Date,
+    default: null,
+    index: true,
+  },
+  // Optional importance. Kept as a small enum so sorting/filtering stays
+  // predictable; `none` means no explicit priority.
+  priority: {
+    type: String,
+    enum: ['none', 'low', 'medium', 'high'],
+    default: 'none',
+  },
 }, {
   timestamps: true,
 })

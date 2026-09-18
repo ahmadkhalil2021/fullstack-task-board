@@ -6,6 +6,8 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { statusColor } from '../lib/statusColor.js'
+import { formatDueDate, isOverdue } from '../lib/dueDate.js'
+import { priorityColor, priorityLabel } from '../lib/priority.js'
 
 const TaskCard = ({ task, onClick }) => {
   const {
@@ -35,6 +37,9 @@ const TaskCard = ({ task, onClick }) => {
   }
 
   const stripe = statusColor(task.status)
+  const due = formatDueDate(task.dueDate)
+  const overdue = isOverdue(task.dueDate)
+  const priority = priorityColor(task.priority)
 
   return (
     <div
@@ -67,6 +72,32 @@ const TaskCard = ({ task, onClick }) => {
             <p className="mt-1 text-sm text-surface-text-muted line-clamp-3">
               {task.description}
             </p>
+          )}
+          {(due || priority) && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {due && (
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${
+                    overdue
+                      ? 'border-danger-muted-strong bg-danger-muted text-danger-text'
+                      : 'border-surface-border bg-surface-muted text-surface-text-muted'
+                  }`}
+                >
+                  <span aria-hidden="true">📅</span>
+                  {due}
+                  {overdue && <span className="sr-only"> (overdue)</span>}
+                </span>
+              )}
+              {priority && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-surface-border bg-surface-muted px-2 py-0.5 text-xs text-surface-text-muted">
+                  <span
+                    aria-hidden="true"
+                    className={`inline-block h-2 w-2 shrink-0 rounded-full bg-priority-${priority}`}
+                  />
+                  {priorityLabel(task.priority)}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>

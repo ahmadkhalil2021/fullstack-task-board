@@ -152,6 +152,46 @@ describe('TableView — sorting', () => {
     expect(screen.getByRole('columnheader', { name: /Status/ })).toHaveAttribute('aria-sort', 'none')
   })
 
+  it('renders the Priority and Due date columns', () => {
+    renderTable()
+    expect(screen.getByRole('columnheader', { name: /Priority/ })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /Due date/ })).toBeInTheDocument()
+  })
+
+  it('sorts by priority rank', () => {
+    renderTable(vi.fn(), {
+      ...baseBoard,
+      tasks: [
+        makeTask({ _id: 't1', name: 'Alpha', priority: 'high' }),
+        makeTask({ _id: 't2', name: 'Beta', priority: 'none' }),
+        makeTask({ _id: 't3', name: 'Gamma', priority: 'low' }),
+      ],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Priority' }))
+    expect(rowNames()).toEqual(['Beta', 'Gamma', 'Alpha'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Priority' }))
+    expect(rowNames()).toEqual(['Alpha', 'Gamma', 'Beta'])
+  })
+
+  it('sorts due dates and always places empty dates last', () => {
+    renderTable(vi.fn(), {
+      ...baseBoard,
+      tasks: [
+        makeTask({ _id: 't1', name: 'Alpha', dueDate: '2026-10-01T00:00:00.000Z' }),
+        makeTask({ _id: 't2', name: 'Beta', dueDate: null }),
+        makeTask({ _id: 't3', name: 'Gamma', dueDate: '2026-09-01T00:00:00.000Z' }),
+      ],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Due date' }))
+    expect(rowNames()).toEqual(['Gamma', 'Alpha', 'Beta'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Due date' }))
+    expect(rowNames()).toEqual(['Alpha', 'Gamma', 'Beta'])
+  })
+
   it('breaks ties deterministically by id for equal and invalid dates', () => {
     const equal = new Date('2026-01-01T00:00:00.000Z').toISOString()
     renderTable(vi.fn(), {

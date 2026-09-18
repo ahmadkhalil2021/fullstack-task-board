@@ -11,13 +11,49 @@ import { notFound, validationError } from '../lib/errors.js'
 
 const router = express.Router()
 
+const PRIORITIES = ['none', 'low', 'medium', 'high']
+
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const ISO_DATE_TIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/
+
+// Strict ISO check: date-only values must round-trip (rejects normalized
+// invalid days like 2026-02-30), and date-times must parse to a finite date.
+const isValidDueDate = (value) => {
+  if (typeof value !== 'string' || !value) return false
+  if (DATE_ONLY_PATTERN.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    const date = new Date(Date.UTC(year, month - 1, day))
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    )
+  }
+  if (ISO_DATE_TIME_PATTERN.test(value)) {
+    return !Number.isNaN(new Date(value).getTime())
+  }
+  return false
+}
+
+// Validate the optional dueDate/priority fields shared by POST and PUT.
+// `undefined` means "not provided" and must stay untouched.
+const validateTaskFields = ({ dueDate, priority }) => {
+  if (dueDate !== undefined && dueDate !== null && !isValidDueDate(dueDate)) {
+    throw validationError('dueDate must be a valid ISO date or null')
+  }
+  if (priority !== undefined && !PRIORITIES.includes(priority)) {
+    throw validationError('priority must be one of: none, low, medium, high')
+  }
+}
+
 // POST /api/tasks
 // Creates a new task and links it to its parent board.
 // The parent board is found by looking up which board contains a task
 // with the given parentBoardId in its tasks array.
 router.post('/', async (req, res, next) => {
   try {
-    const { name, description, icon, status, order, parentBoardId } = req.body || {}
+    const { name, description, icon, status, order, parentBoardId, dueDate, priority } = req.body || {}
 
     if (!parentBoardId) {
       throw validationError('parentBoardId is required')
@@ -28,6 +64,7 @@ router.post('/', async (req, res, next) => {
     if (order !== undefined && (typeof order !== 'number' || !Number.isFinite(order))) {
       throw validationError('order must be a number')
     }
+    validateTaskFields({ dueDate, priority })
 
     // Find the parent board and verify the status is in its allowed list
     const board = await Board.findById(parentBoardId)
@@ -38,8 +75,8 @@ router.post('/', async (req, res, next) => {
       )
     }
 
-    // Create the task. `order` defaults to 0 when omitted (see Task model).
-    const task = await Task.create({ name, description, icon, status, order })
+    // Create the task. `order`/`dueDate`/`priority` default when omitted.
+    const task = await Task.create({ name, description, icon, status, order, dueDate, priority })
 
     // Link the task to the board
     board.tasks.push(task._id)
@@ -63,7 +100,7 @@ router.post('/', async (req, res, next) => {
 // If `status` is provided, validates it against the parent board's statuses.
 router.put('/:taskId', async (req, res, next) => {
   try {
-    const { name, description, icon, status } = req.body || {}
+    const { name, description, icon, status, dueDate, priority } = req.body || {}
 
     // Build the update object with only provided fields
     const update = {}
@@ -71,10 +108,14 @@ router.put('/:taskId', async (req, res, next) => {
     if (description !== undefined) update.description = description
     if (icon !== undefined) update.icon = icon
     if (status !== undefined) update.status = status
+    // `dueDate: null` explicitly clears the date; `undefined` leaves it untouched.
+    if (dueDate !== undefined) update.dueDate = dueDate
+    if (priority !== undefined) update.priority = priority
 
     if (Object.keys(update).length === 0) {
       throw validationError('No fields to update')
     }
+    validateTaskFields({ dueDate, priority })
 
     const oldTask = await Task.findById(req.params.taskId)
     if (!oldTask) throw notFound('Task not found')
@@ -116,6 +157,19 @@ router.put('/:taskId', async (req, res, next) => {
     }
     if (icon !== undefined && icon !== oldTask.icon) {
       fieldChanges.icon = { from: oldTask.icon, to: task.icon }
+    }
+    if (dueDate !== undefined) {
+      const fromTime = oldTask.dueDate ? new Date(oldTask.dueDate).getTime() : null
+      const toTime = task.dueDate ? new Date(task.dueDate).getTime() : null
+      if (fromTime !== toTime) {
+        fieldChanges.dueDate = {
+          from: oldTask.dueDate ?? null,
+          to: task.dueDate ?? null,
+        }
+      }
+    }
+    if (priority !== undefined && priority !== oldTask.priority) {
+      fieldChanges.priority = { from: oldTask.priority, to: task.priority }
     }
     if (Object.keys(fieldChanges).length > 0) {
       await emitActivity({

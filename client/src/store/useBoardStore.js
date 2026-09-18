@@ -156,6 +156,19 @@ export const useBoardStore = create((set, get) => ({
       if (data.icon !== undefined && data.icon !== oldTask.icon) {
         fieldChanges.icon = { from: oldTask.icon, to: data.icon }
       }
+      if (data.dueDate !== undefined) {
+        const fromTime = oldTask.dueDate ? new Date(oldTask.dueDate).getTime() : null
+        const toTime = data.dueDate ? new Date(data.dueDate).getTime() : null
+        if (fromTime !== toTime) {
+          fieldChanges.dueDate = {
+            from: oldTask.dueDate ?? null,
+            to: data.dueDate ?? null,
+          }
+        }
+      }
+      if (data.priority !== undefined && data.priority !== oldTask.priority) {
+        fieldChanges.priority = { from: oldTask.priority, to: data.priority }
+      }
       if (Object.keys(fieldChanges).length > 0) {
         get().addOptimisticActivity(optimisticActivity(previousBoard._id, {
           type: 'task_updated',
@@ -352,6 +365,8 @@ export const useBoardStore = create((set, get) => ({
       icon: '⏰',
       status,
       order: newOrder,
+      dueDate: null,
+      priority: 'none',
       parentBoardId: previousBoard._id,
     }
     set({
@@ -375,6 +390,8 @@ export const useBoardStore = create((set, get) => ({
         icon: tempTask.icon,
         status,
         order: newOrder,
+        dueDate: null,
+        priority: 'none',
         parentBoardId: previousBoard._id,
       })
       set({
