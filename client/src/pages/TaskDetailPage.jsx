@@ -1,6 +1,7 @@
 // TaskDetailPage.jsx — Odoo-style form view for a single task.
 // Replaces the former TaskForm modal: /board/:boardId/task/:taskId.
 // Control panel (breadcrumb + Save/Discard), statusbar stages, form sheet.
+// Statusbar clicks save immediately; Save covers the remaining fields.
 
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -45,8 +46,8 @@ const TaskDetailForm = ({ task, backTo }) => {
   const [name, setName] = useState(task.name)
   const [description, setDescription] = useState(task.description ?? '')
   const [icon, setIcon] = useState(task.icon)
-  const [status, setStatus] = useState(task.status)
   const [isSaving, setIsSaving] = useState(false)
+  const [isStatusSaving, setIsStatusSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [now, setNow] = useState(Date.now())
@@ -58,25 +59,39 @@ const TaskDetailForm = ({ task, backTo }) => {
   }, [])
 
   const statuses = board?.statuses ?? []
+  // Statusbar changes save immediately, so Save only covers the other fields.
+  const status = task.status
   const hasChanges =
     name !== task.name ||
     description !== (task.description ?? '') ||
-    icon !== task.icon ||
-    status !== task.status
+    icon !== task.icon
 
   const handleDiscard = () => {
     setName(task.name)
     setDescription(task.description ?? '')
     setIcon(task.icon)
-    setStatus(task.status)
     setSaved(false)
+  }
+
+  const handleStatusSelect = async (stage) => {
+    if (stage === task.status || isStatusSaving || isSaving) return
+    setIsStatusSaving(true)
+    setSaved(false)
+    try {
+      await updateTask(task._id, { status: stage })
+    } catch {
+      // Store rolled back the optimistic change and set the error banner;
+      // the statusbar follows the store again.
+    } finally {
+      setIsStatusSaving(false)
+    }
   }
 
   const handleSave = async () => {
     setIsSaving(true)
     setSaved(false)
     try {
-      await updateTask(task._id, { name: name.trim(), description, icon, status })
+      await updateTask(task._id, { name: name.trim(), description, icon })
       setSaved(true)
     } catch {
       // Store rolled back and set the error banner.
@@ -122,17 +137,40 @@ const TaskDetailForm = ({ task, backTo }) => {
               type="button"
               onClick={handleDiscard}
               disabled={!hasChanges || isSaving}
-              className="rounded px-3 py-1.5 text-sm text-surface-text-muted hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+              aria-label="Discard"
+              title="Discard"
+              className="inline-flex items-center justify-center rounded p-2 text-surface-text-muted hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
-              Discard
+              <svg
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M3 6h6.5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5.5 3 2.5 6l3 3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
             <button
               type="button"
               onClick={handleSave}
               disabled={!hasChanges || isSaving || !name.trim()}
-              className="rounded bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+              aria-label={isSaving ? 'Saving...' : 'Save'}
+              title="Save"
+              className="inline-flex items-center justify-center rounded bg-primary p-2 text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
-              {isSaving ? 'Saving...' : 'Save'}
+              <svg
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M3 8.5 6.5 12 13 4.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </div>
         </div>
@@ -154,11 +192,9 @@ const TaskDetailForm = ({ task, backTo }) => {
                   type="button"
                   role="radio"
                   aria-checked={isActive}
-                  onClick={() => {
-                    setStatus(stage)
-                    setSaved(false)
-                  }}
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle ${
+                  onClick={() => handleStatusSelect(stage)}
+                  disabled={isStatusSaving || isSaving}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle disabled:cursor-not-allowed disabled:opacity-50 ${
                     isActive
                       ? 'border-primary bg-primary-muted font-semibold text-primary-muted-text'
                       : 'border-surface-border bg-surface-raised text-surface-text-muted hover:bg-surface-muted'
@@ -291,7 +327,7 @@ const TaskDetailPage = () => {
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const location = useLocation()
 
-  // Preserve the exact board view (kanban/list + filters) the user came from.
+  // Preserve the exact board view (kanban/grid/table + filters) the user came from.
   const backTo = location.state?.from ?? `/board/${boardId}`
 
   useEffect(() => {

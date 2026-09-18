@@ -37,7 +37,8 @@ const renderAt = (path) => {
     [
       { path: '/', element: <HomePage /> },
       { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
-      { path: '/board/:boardId/list', element: <BoardPage /> },
+      { path: '/board/:boardId/grid', element: <BoardPage /> },
+      { path: '/board/:boardId/table', element: <BoardPage /> },
       { path: '/board/:boardId', element: <BoardPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
@@ -83,13 +84,18 @@ describe('routing', () => {
     expect(screen.getByText(/page not found/i)).toBeInTheDocument()
   })
 
-  it('renders the List view at /board/:boardId/list', () => {
+  it('renders NotFoundPage for unknown board sub-paths', () => {
+    renderAt('/board/abc-123/unknown')
+    expect(screen.getByText('404')).toBeInTheDocument()
+  })
+
+  it('renders the Grid view at /board/:boardId/grid', () => {
     useBoardStore.setState({
       board: {
         _id: 'abc-123',
         name: 'Test Board',
         description: '',
-        statuses: ['A', 'B'],
+        statuses: ['A'],
         tasks: [
           { _id: 't1', name: 'T1', description: '', icon: '⏰', status: 'A' },
         ],
@@ -98,14 +104,29 @@ describe('routing', () => {
       activityLoading: false,
       activityError: null,
     })
-    renderAt('/board/abc-123/list')
-    expect(screen.getByRole('link', { name: 'List' })).toHaveAttribute('aria-current', 'page')
+    renderAt('/board/abc-123/grid')
+    expect(screen.getByRole('link', { name: 'Grid' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByText('T1')).toBeInTheDocument()
   })
 
-  it('renders NotFoundPage for unknown board sub-paths', () => {
-    renderAt('/board/abc-123/unknown')
-    expect(screen.getByText('404')).toBeInTheDocument()
+  it('renders the Table view at /board/:boardId/table', () => {
+    useBoardStore.setState({
+      board: {
+        _id: 'abc-123',
+        name: 'Test Board',
+        description: '',
+        statuses: ['A'],
+        tasks: [
+          { _id: 't1', name: 'T1', description: '', icon: '⏰', status: 'A' },
+        ],
+      },
+      activity: [],
+      activityLoading: false,
+      activityError: null,
+    })
+    renderAt('/board/abc-123/table')
+    expect(screen.getByRole('link', { name: 'Table' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('columnheader', { name: /Name/ })).toBeInTheDocument()
   })
 
   it('renders the task detail page at /board/:boardId/task/:taskId', () => {

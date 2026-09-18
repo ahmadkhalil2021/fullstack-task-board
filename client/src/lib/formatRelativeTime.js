@@ -1,6 +1,6 @@
 // formatRelativeTime.js — Relative "2 hours ago" labels with a safe fallback.
-// Shared by the ActivityFeed and the List view; the `(iso, now)` signature
-// keeps it deterministic in tests.
+// Shared by ActivityFeed and the Grid/Table board views; the `(iso, now)`
+// signature keeps it deterministic in tests.
 
 const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
 

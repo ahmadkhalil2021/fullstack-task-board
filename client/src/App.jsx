@@ -13,7 +13,8 @@ import NotFoundPage from './pages/NotFoundPage.jsx'
 const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
   { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
-  { path: '/board/:boardId/list', element: <BoardPage /> },
+  { path: '/board/:boardId/grid', element: <BoardPage /> },
+  { path: '/board/:boardId/table', element: <BoardPage /> },
   { path: '/board/:boardId', element: <BoardPage /> },
   { path: '*', element: <NotFoundPage /> },
 ])

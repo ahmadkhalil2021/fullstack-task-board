@@ -66,7 +66,6 @@ const renderDetail = ({ entry = '/board/b1/task/t1', state, storeBoard = board }
     [
       { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
       { path: '/board/:boardId', element: <div>BOARD PAGE</div> },
-      { path: '/board/:boardId/list', element: <div>BOARD LIST PAGE</div> },
     ],
     { initialEntries: [state ? { pathname: entry, state } : entry] }
   )
@@ -88,6 +87,15 @@ describe('TaskDetailPage', () => {
     expect(screen.getByRole('radio', { name: 'Completed' })).toHaveAttribute('aria-checked', 'false')
     expect(screen.getByText(/^Created /)).toBeInTheDocument()
     expect(screen.getByText(/^Last updated /)).toBeInTheDocument()
+  })
+
+  it('renders icon-only Save and Discard controls with accessible names', () => {
+    renderDetail()
+    for (const name of ['Save', 'Discard']) {
+      const button = screen.getByRole('button', { name })
+      expect(button.textContent).toBe('')
+      expect(button.querySelector('svg')).toBeInTheDocument()
+    }
   })
 
   it('lists the board statuses in the statusbar', () => {
@@ -121,21 +129,31 @@ describe('TaskDetailPage', () => {
     expect(await screen.findByText('Saved')).toBeInTheDocument()
   })
 
-  it('applies a clicked statusbar stage on save', async () => {
+  it('saves a clicked statusbar stage immediately without pressing Save', async () => {
     const user = userEvent.setup()
     api.updateTask.mockImplementation((id, data) => Promise.resolve({ ...task, ...data }))
     renderDetail()
 
     await user.click(screen.getByRole('radio', { name: 'Completed' }))
-    expect(screen.getByRole('radio', { name: 'Completed' })).toHaveAttribute('aria-checked', 'true')
 
-    await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => {
-      expect(api.updateTask).toHaveBeenCalledWith(
-        't1',
-        expect.objectContaining({ status: 'Completed' })
-      )
+      expect(api.updateTask).toHaveBeenCalledWith('t1', { status: 'Completed' })
     })
+    expect(screen.getByRole('radio', { name: 'Completed' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
+  it('reverts the statusbar when the immediate status save fails', async () => {
+    const user = userEvent.setup()
+    api.updateTask.mockRejectedValue(new Error('Update failed'))
+    renderDetail()
+
+    await user.click(screen.getByRole('radio', { name: 'Completed' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'In Progress' })).toHaveAttribute('aria-checked', 'true')
+    })
+    expect(useBoardStore.getState().error).toBe('Update failed')
   })
 
   it('discards local edits', async () => {
@@ -214,11 +232,11 @@ describe('TaskDetailPage', () => {
   it('links back to the originating view and filters when provided', () => {
     renderDetail({
       entry: '/board/b1/task/t1',
-      state: { from: '/board/b1/list?q=login&f=in-progress' },
+      state: { from: '/board/b1/table?q=login&f=in-progress' },
     })
     expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute(
       'href',
-      '/board/b1/list?q=login&f=in-progress'
+      '/board/b1/table?q=login&f=in-progress'
     )
   })
 

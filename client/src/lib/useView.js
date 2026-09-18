@@ -1,13 +1,17 @@
 // useView.js — Derive the active board view from the URL.
-// The URL is the single source of truth for view selection; unknown
-// sub-paths fall back to Kanban only for the exact board root.
+// Only the four exact board paths map to a view; anything else returns null
+// so a malformed URL can never be mistaken for Kanban. The router remains the
+// 404 authority for unknown paths.
 
 import { useLocation } from 'react-router-dom'
+
+const EXTRA_VIEWS = ['grid', 'table']
 
 export const useView = () => {
   const { pathname } = useLocation()
   const segments = pathname.split('/').filter(Boolean)
-  return segments.length === 3 && segments[0] === 'board' && segments[2] === 'list'
-    ? 'list'
-    : 'kanban'
+  if (segments[0] !== 'board') return null
+  if (segments.length === 2) return 'kanban'
+  if (segments.length === 3 && EXTRA_VIEWS.includes(segments[2])) return segments[2]
+  return null
 }
