@@ -1,4 +1,4 @@
-// __tests__/list-view.test.jsx — Odoo-style grouping, collapse, rows, add actions and filters.
+// __tests__/list-view.test.jsx — Flat table, sorting, filter and navigation integration.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, within, fireEvent, act } from '@testing-library/react'
@@ -79,25 +79,24 @@ const renderBoardPage = (entry = '/board/b1/list') => {
   return render(<RouterProvider router={router} />)
 }
 
-// The toggle button controls a dedicated <tbody id="list-section-N">.
-const sectionFor = (status) => {
-  const toggle = screen.getByRole('button', { name: new RegExp(`^${status}`) })
-  return document.getElementById(toggle.getAttribute('aria-controls'))
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
   api.fetchActivity.mockResolvedValue({ activities: [], hasMore: false })
 })
 
-describe('ListView — Odoo-style grouping and rows', () => {
-  it('renders one collapsible group per status in board order', () => {
+describe('ListView — flat Odoo-style table', () => {
+  it('renders a flat list sorted by board status order, then order', () => {
     renderList()
-    const groups = screen
-      .getAllByRole('button')
-      .filter((node) => node.getAttribute('aria-controls')?.startsWith('list-section-'))
-      .map((node) => node.textContent.replace(/[^A-Za-z ]/g, '').trim())
-    expect(groups).toEqual(['Blocked', 'In Progress', 'Completed'])
+    const names = screen
+      .getAllByText(/Blocked B|Doing A2|Doing A|Done C/)
+      .map((node) => node.textContent)
+    expect(names).toEqual(['Blocked B', 'Doing A2', 'Doing A', 'Done C'])
+  })
+
+  it('renders no status group headers', () => {
+    renderList()
+    expect(screen.queryByRole('button', { name: /^In Progress/ })).not.toBeInTheDocument()
+    expect(document.querySelector('[id^="list-section-"]')).toBeNull()
   })
 
   it('shows icon, name, status, relative time and a row affordance', () => {
@@ -111,38 +110,12 @@ describe('ListView — Odoo-style grouping and rows', () => {
     expect(within(screen.getByText('Doing A').closest('tr')).getByText('In Progress')).toBeInTheDocument()
   })
 
-  it('orders rows within a group by order, not input order', () => {
-    renderList()
-    const names = within(sectionFor('In Progress'))
-      .getAllByText(/Doing A/)
-      .map((node) => node.textContent)
-    expect(names).toEqual(['Doing A2', 'Doing A'])
-  })
-
-  it('keeps empty statuses addable with a zero-count group', () => {
-    resetStore({
-      ...baseBoard,
-      statuses: ['Blocked', 'Empty', 'Completed'],
-      tasks: baseBoard.tasks.filter((t) => t.status !== 'Blocked'),
-    })
+  it('keeps the add-a-line row for empty boards', () => {
+    resetStore({ ...baseBoard, tasks: [] })
     render(<ListView onTaskClick={vi.fn()} />)
 
-    expect(screen.getByRole('button', { name: /^Empty/ })).toHaveTextContent('0')
-    expect(screen.getAllByRole('button', { name: '+ Add a line' })).toHaveLength(3)
-  })
-
-  it('collapses and expands a group', () => {
-    renderList()
-    const toggle = screen.getByRole('button', { name: /^In Progress/ })
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByText('Doing A')).toBeVisible()
-
-    fireEvent.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.getByText('Doing A')).not.toBeVisible()
-
-    fireEvent.click(toggle)
-    expect(screen.getByText('Doing A')).toBeVisible()
+    expect(screen.getByText('No tasks yet')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ Add a line' })).toBeInTheDocument()
   })
 
   it('calls onTaskClick once whether the name or the row is clicked', () => {
@@ -166,7 +139,6 @@ describe('ListView — filter integration', () => {
     expect(screen.getByText('Blocked B')).toBeInTheDocument()
     expect(screen.queryByText('Doing A')).not.toBeInTheDocument()
     expect(screen.queryByText('Done C')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Completed/ })).toHaveTextContent('0')
   })
 
   it('shows the shared no-results banner and clears it from BoardPage', () => {
@@ -183,16 +155,16 @@ describe('ListView — filter integration', () => {
 })
 
 describe('ListView — add and navigation integration', () => {
-  it('creates a task with the group status and opens its detail page', async () => {
-    const created = makeTask({ _id: 'new-1', name: 'New Task', status: 'Completed', order: -1 })
+  it('creates a task in the first status and opens its detail page', async () => {
+    const created = makeTask({ _id: 'new-1', name: 'New Task', status: 'Blocked', order: -1 })
     api.createTask.mockResolvedValue(created)
     renderBoardPage()
 
-    fireEvent.click(within(sectionFor('Completed')).getByRole('button', { name: '+ Add a line' }))
+    fireEvent.click(screen.getByRole('button', { name: '+ Add a line' }))
 
     expect(await screen.findByText('TASK PAGE')).toBeInTheDocument()
     expect(api.createTask).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'Completed', parentBoardId: 'b1' })
+      expect.objectContaining({ status: 'Blocked', parentBoardId: 'b1' })
     )
   })
 

@@ -223,3 +223,15 @@ Produkt-Follow-up nach UI-Review:
 - Das gemeinsame `TaskForm`-Modal wurde entfernt. Ein Klick auf eine Aufgabe in Kanban oder Liste (sowie das Anlegen aus beiden Ansichten) navigiert jetzt auf die dedizierte, voll bearbeitbare Seite `/board/:boardId/task/:taskId` (`client/src/pages/TaskDetailPage.jsx`): Name, Beschreibung, Icon, Status, Speicher-Feedback, Zwei-Schritt-Löschen, Angelegt/Aktualisiert-Meta und ein Zurück-Link, der die Herkunftsansicht + Filter über `location.state.from` erhält.
 - Die Row-Click-Akzeptanzkriterien bedeuten jetzt „öffnet die Task-Detailseite“.
 
+---
+
+## Addendum 3 — 2026-09-18 (flache Liste, keine Gruppierung)
+
+Produkt-Follow-up: Die List-Ansicht darf die Aufgaben nicht nach Status gruppieren.
+
+- `ListView` rendert einen flachen Tabellenkörper, sortiert nach `board.statuses`-Reihenfolge und danach nach Kanban-`order`. Die Status-Spalte bleibt pro Zeile sichtbar.
+- Gruppenkopf-Zeilen, Kollaps-State und Add-Zeilen pro Gruppe wurden entfernt. Eine einzige `+ Add a line`-Zeile unten legt im ersten Status an (entspricht Kanbans Add in der ersten Spalte) und öffnet die Task-Detailseite.
+- Filter-Treffer-0 nutzt weiterhin das gemeinsame Seiten-Banner; ein ungefiltertes leeres Board zeigt `No tasks yet`.
+- Das Task-FormularSheet wurde von `max-w-4xl` auf `max-w-6xl` verbreitert.
+
+

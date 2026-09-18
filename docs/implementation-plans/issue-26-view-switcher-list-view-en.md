@@ -223,3 +223,15 @@ Product follow-up after UI review:
 - The shared `TaskForm` modal was removed. Clicking a task in Kanban or List (and creating one from either view) now navigates to the dedicated, fully editable page `/board/:boardId/task/:taskId` (`client/src/pages/TaskDetailPage.jsx`): name, description, icon, status, save feedback, two-step delete, created/updated meta, and a back link that preserves the originating view + filters via `location.state.from`.
 - The row-click acceptance criteria now mean “opens the task detail page”.
 
+---
+
+## Addendum 3 — 2026-09-18 (flat list, no grouping)
+
+Product follow-up: the List view must not group tasks by status.
+
+- `ListView` renders one flat table body, sorted by `board.statuses` order and then by the Kanban `order`. The Status column stays visible per row.
+- Group header rows, collapse state and per-group add rows were removed. A single `+ Add a line` row at the bottom creates in the first status (matching Kanban's first-column add) and opens the task detail page.
+- Filter-empty results still use the shared page banner; an unfiltered empty board shows `No tasks yet`.
+- The task form sheet was widened from `max-w-4xl` to `max-w-6xl`.
+
+

@@ -98,7 +98,7 @@ const TaskDetailForm = ({ task, backTo }) => {
     <div className="flex min-h-screen flex-col bg-surface-subtle">
       {/* Control panel: breadcrumb + record actions */}
       <div className="sticky top-0 z-10 border-b border-surface-border bg-surface-raised">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
             <Link
               to={backTo}
@@ -138,7 +138,7 @@ const TaskDetailForm = ({ task, backTo }) => {
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-6 sm:px-6">
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         {/* Statusbar: board stages, current one highlighted */}
         <div role="radiogroup" aria-label="Status" className="mb-4 flex flex-wrap items-center gap-1">
           {statuses.map((stage, index) => {
@@ -308,7 +308,7 @@ const TaskDetailPage = () => {
     return (
       <div className="min-h-screen bg-surface-subtle flex flex-col">
         <ErrorBanner />
-        <div className="mx-auto w-full max-w-4xl p-4 sm:p-6">
+        <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
           <Link
             to={backTo}
             className="inline-flex w-fit items-center gap-1 rounded text-sm text-surface-text-muted hover:text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
@@ -338,7 +338,7 @@ const TaskDetailPage = () => {
     return (
       <div className="min-h-screen bg-surface-subtle flex flex-col">
         <ErrorBanner />
-        <div className="mx-auto w-full max-w-4xl p-4 sm:p-6">
+        <div className="mx-auto w-full max-w-6xl p-4 sm:p-6">
           <Link
             to={backTo}
             className="inline-flex w-fit items-center gap-1 rounded text-sm text-surface-text-muted hover:text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
