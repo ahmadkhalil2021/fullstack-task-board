@@ -3,6 +3,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { useBoardStore } from '../store/useBoardStore.js'
 import BoardHeader from '../components/BoardHeader.jsx'
 import Column from '../components/Column.jsx'
@@ -141,7 +142,7 @@ describe('BoardHeader', () => {
     useBoardStore.setState({
       board: { _id: 'b1', name: 'My Board', description: 'A test', statuses: [], tasks: [] },
     })
-    render(<BoardHeader />)
+    render(<MemoryRouter><BoardHeader /></MemoryRouter>)
     expect(screen.getByDisplayValue('My Board')).toBeInTheDocument()
     expect(screen.getByDisplayValue('A test')).toBeInTheDocument()
   })
@@ -151,7 +152,7 @@ describe('BoardHeader', () => {
     useBoardStore.setState({
       board: { _id: 'b1', name: 'Original', description: '', statuses: [], tasks: [] },
     })
-    render(<BoardHeader />)
+    render(<MemoryRouter><BoardHeader /></MemoryRouter>)
     const nameInput = screen.getByDisplayValue('Original')
     await user.clear(nameInput)
     await user.type(nameInput, 'Edited')

@@ -1,19 +1,13 @@
-// CommandBar.jsx — Cmd/Ctrl+K command bar for board search and status filtering.
-// Owns the URL sync (?q= and ?f=) so the store stays router-agnostic, and
-// closes on Esc, backdrop click or when focus leaves the panel.
+// CommandBar.jsx — Odoo-style board search bar in the header.
+// Focus the input to get filter suggestions, type for a quick-search option,
+// and apply filters as removable facet chips. Applied state stays in the
+// store and is mirrored to ?q= / ?f= without coupling the store to the router.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import { resolveStatusKey, statusKeyFor } from '../lib/statusKey.js'
 import { statusColor } from '../lib/statusColor.js'
-import { useDebouncedValue } from '../lib/useDebouncedValue.js'
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
-const IS_MAC =
-  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform ?? '')
 
 const CommandBar = () => {
   const board = useBoardStore((s) => s.board)
@@ -21,17 +15,14 @@ const CommandBar = () => {
   const filterStatus = useBoardStore((s) => s.filterStatus)
   const setSearchQuery = useBoardStore((s) => s.setSearchQuery)
   const setFilterStatus = useBoardStore((s) => s.setFilterStatus)
-  const clearSearch = useBoardStore((s) => s.clearSearch)
 
   const [searchParams, setSearchParams] = useSearchParams()
+  const [draft, setDraft] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const [draft, setDraft] = useState(() => searchParams.get('q') ?? '')
-  const debouncedDraft = useDebouncedValue(draft, 150)
+  const [activeIndex, setActiveIndex] = useState(0)
 
-  const triggerRef = useRef(null)
+  const rootRef = useRef(null)
   const inputRef = useRef(null)
-  const panelRef = useRef(null)
-  const wasOpen = useRef(false)
   const didMount = useRef(false)
 
   const statuses = useMemo(() => board?.statuses ?? [], [board?.statuses])
@@ -40,12 +31,10 @@ const CommandBar = () => {
   // (trimmed query, resolved status key) so stale links never filter wrongly.
   useEffect(() => {
     const urlQuery = (searchParams.get('q') ?? '').trim()
-    const rawFilter = searchParams.get('f')
-    const resolved = resolveStatusKey(rawFilter, statuses)
+    const resolved = resolveStatusKey(searchParams.get('f'), statuses)
 
     setSearchQuery(urlQuery)
     setFilterStatus(resolved)
-    if (urlQuery || resolved) setIsOpen(true)
 
     const next = new URLSearchParams(searchParams)
     if (urlQuery) next.set('q', urlQuery)
@@ -59,13 +48,8 @@ const CommandBar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Debounced input becomes the effective store query.
-  useEffect(() => {
-    setSearchQuery(debouncedDraft.trim())
-  }, [debouncedDraft, setSearchQuery])
-
-  // Keep the URL in sync with the effective filter state. The mount run is
-  // skipped because the hydration effect above already canonicalized the URL.
+  // Keep the URL in sync with the applied filters. The mount run is skipped
+  // because the hydration effect above already canonicalized the URL.
   useEffect(() => {
     if (!didMount.current) {
       didMount.current = true
@@ -88,7 +72,6 @@ const CommandBar = () => {
     const urlQuery = (searchParams.get('q') ?? '').trim()
     const urlStatus = resolveStatusKey(searchParams.get('f'), statuses)
     if (urlQuery !== query || urlStatus !== filterStatus) {
-      setDraft(urlQuery)
       setSearchQuery(urlQuery)
       setFilterStatus(urlStatus)
     }
@@ -100,49 +83,39 @@ const CommandBar = () => {
     if (filterStatus && !statuses.includes(filterStatus)) setFilterStatus(null)
   }, [statuses, filterStatus, setFilterStatus])
 
-  // Global shortcut. The bar stays mounted while closed.
+  // Global shortcut: jump into the search bar.
   useEffect(() => {
     const onKeyDown = (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         setIsOpen(true)
+        inputRef.current?.focus()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  // Move focus into the panel on open, back to the trigger on close.
-  useEffect(() => {
-    if (isOpen) {
-      inputRef.current?.focus()
-      wasOpen.current = true
-      return
-    }
-    if (wasOpen.current) {
-      wasOpen.current = false
-      triggerRef.current?.focus()
-    }
-  }, [isOpen])
-
-  // "Focus leaves" closes the bar.
+  // Close the suggestion list on any click outside the bar.
   useEffect(() => {
     if (!isOpen) return
-    const onFocusIn = (event) => {
-      if (!panelRef.current?.contains(event.target)) setIsOpen(false)
+    const onMouseDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) setIsOpen(false)
     }
-    document.addEventListener('focusin', onFocusIn)
-    return () => document.removeEventListener('focusin', onFocusIn)
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
   }, [isOpen])
+
+  const trimmedDraft = draft.trim()
+
+  // Restart keyboard navigation at the top whenever the options change.
+  useEffect(() => {
+    setActiveIndex(0)
+  }, [trimmedDraft, isOpen])
 
   const queryMatchedTasks = useMemo(
     () => filterTasks(board?.tasks, query, null),
     [board?.tasks, query]
-  )
-
-  const filteredTasks = useMemo(
-    () => filterTasks(board?.tasks, query, filterStatus),
-    [board?.tasks, query, filterStatus]
   )
 
   const counts = useMemo(() => {
@@ -153,171 +126,223 @@ const CommandBar = () => {
     return map
   }, [queryMatchedTasks])
 
+  const statusOptions = useMemo(
+    () => statuses.map((status, index) => ({ id: `command-bar-status-${index}`, status })),
+    [statuses]
+  )
+
   if (!board) return null
 
-  const isFiltering = query !== '' || filterStatus !== null
-  const noMatches = isFiltering && filteredTasks.length === 0
+  const options = trimmedDraft
+    ? [{ id: 'command-bar-quick-search', type: 'search' }, ...statusOptions.map((option) => ({ ...option, type: 'status' }))]
+    : statusOptions.map((option) => ({ ...option, type: 'status' }))
 
-  const close = () => setIsOpen(false)
+  const safeIndex = Math.min(activeIndex, Math.max(options.length - 1, 0))
+  const activeOption = options[safeIndex]
 
-  const handleClear = () => {
-    setDraft('')
-    clearSearch()
+  const facets = []
+  if (query) {
+    facets.push({
+      key: 'query',
+      label: `Search: ${query}`,
+      remove: () => setSearchQuery(''),
+    })
+  }
+  if (filterStatus) {
+    facets.push({
+      key: 'status',
+      label: filterStatus,
+      dot: statusColor(filterStatus),
+      remove: () => setFilterStatus(null),
+    })
   }
 
-  const handleDialogKeyDown = (event) => {
-    if (event.key === 'Escape') {
-      event.stopPropagation()
-      close()
+  const applyOption = (option) => {
+    if (!option) return
+    if (option.type === 'search') {
+      setSearchQuery(trimmedDraft)
+      setDraft('')
+    } else {
+      setFilterStatus(filterStatus === option.status ? null : option.status)
+    }
+    setIsOpen(false)
+    inputRef.current?.focus()
+  }
+
+  const removeLastFacet = () => {
+    if (filterStatus) setFilterStatus(null)
+    else if (query) setSearchQuery('')
+  }
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      if (!isOpen) {
+        setIsOpen(true)
+        return
+      }
+      setActiveIndex((index) => Math.min(index + 1, options.length - 1))
       return
     }
-    if (event.key !== 'Tab' || !panelRef.current) return
-    const nodes = panelRef.current.querySelectorAll(FOCUSABLE_SELECTOR)
-    if (!nodes.length) return
-    const first = nodes[0]
-    const last = nodes[nodes.length - 1]
-    if (event.shiftKey && document.activeElement === first) {
+    if (event.key === 'ArrowUp') {
       event.preventDefault()
-      last.focus()
-    } else if (!event.shiftKey && document.activeElement === last) {
+      setActiveIndex((index) => Math.max(index - 1, 0))
+      return
+    }
+    if (event.key === 'Enter') {
+      if (!isOpen) return
       event.preventDefault()
-      first.focus()
+      applyOption(activeOption)
+      return
+    }
+    if (event.key === 'Escape') {
+      if (isOpen) {
+        event.preventDefault()
+        setIsOpen(false)
+      } else if (draft) {
+        setDraft('')
+      }
+      return
+    }
+    if (event.key === 'Backspace' && draft === '') {
+      removeLastFacet()
     }
   }
 
-  return (
-    <>
-      <div className="px-4 sm:px-6 pt-4">
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => setIsOpen(true)}
-          aria-label="Search tasks"
-          aria-keyshortcuts="Control+K Meta+K"
-          className="flex w-full sm:w-96 items-center gap-2 px-3 py-2 rounded-card border border-surface-border bg-surface-raised text-left text-surface-text-subtle hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
-        >
+  const renderOption = (option, index) => (
+    <div
+      key={option.id}
+      id={option.id}
+      role="option"
+      aria-selected={index === safeIndex}
+      onMouseDown={(event) => {
+        event.preventDefault()
+        applyOption(option)
+      }}
+      onMouseEnter={() => setActiveIndex(index)}
+      className={`flex cursor-pointer items-center gap-2 px-3 py-2 text-sm ${
+        index === safeIndex ? 'bg-surface-muted text-surface-text' : 'text-surface-text-muted'
+      }`}
+    >
+      {option.type === 'search' ? (
+        <>
           <span aria-hidden="true">🔍</span>
-          <span className="text-sm">Search tasks...</span>
-          <kbd className="ml-auto text-xs font-sans border border-surface-border rounded px-1.5 py-0.5">
-            {IS_MAC ? '⌘K' : 'Ctrl K'}
-          </kbd>
-        </button>
+          <span>
+            Name or description contains &quot;<strong>{trimmedDraft}</strong>&quot;
+          </span>
+        </>
+      ) : (
+        <>
+          <span
+            aria-hidden="true"
+            className={`inline-block h-2 w-2 shrink-0 rounded-full bg-status-${statusColor(option.status)}`}
+          />
+          <span className="flex-1">{option.status}</span>
+          <span className="text-xs text-surface-text-subtle">
+            {counts.get(option.status) ?? 0}
+          </span>
+          {filterStatus === option.status && (
+            <span aria-hidden="true" className="text-primary">
+              ✓
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  )
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false)
+      }}
+    >
+      <div className="flex flex-wrap items-center gap-1 rounded-card border border-surface-border bg-surface-raised px-2 py-1.5 transition-colors duration-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
+        <span aria-hidden="true" className="px-1 text-surface-text-subtle">
+          🔍
+        </span>
+        {facets.map((facet) => (
+          <span
+            key={facet.key}
+            className="inline-flex items-center gap-1 rounded-md bg-primary-muted px-2 py-0.5 text-sm text-primary-muted-text"
+          >
+            {facet.dot && (
+              <span
+                aria-hidden="true"
+                className={`inline-block h-2 w-2 shrink-0 rounded-full bg-status-${facet.dot}`}
+              />
+            )}
+            {facet.label}
+            <button
+              type="button"
+              aria-label={`Remove filter: ${facet.label}`}
+              onClick={() => {
+                facet.remove()
+                inputRef.current?.focus()
+              }}
+              className="rounded p-0.5 leading-none hover:bg-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          type="text"
+          role="combobox"
+          aria-label="Search tasks"
+          aria-expanded={isOpen}
+          aria-controls="command-bar-listbox"
+          aria-autocomplete="list"
+          aria-activedescendant={isOpen && activeOption ? activeOption.id : undefined}
+          placeholder="Search..."
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value)
+            setIsOpen(true)
+          }}
+          onFocus={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+          onKeyDown={handleKeyDown}
+          className="min-w-[6rem] flex-1 bg-transparent text-sm text-surface-text placeholder:text-surface-text-subtle focus:outline-none"
+        />
       </div>
 
       {isOpen && (
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="command-bar-title"
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[10vh] animate-fade-in"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) close()
-          }}
-          onKeyDown={handleDialogKeyDown}
+          id="command-bar-listbox"
+          role="listbox"
+          aria-label="Search suggestions"
+          className="absolute left-0 right-0 top-full z-40 mt-1 max-h-80 overflow-y-auto rounded-card border border-surface-border bg-surface-overlay shadow-card-hover"
         >
-          <div
-            ref={panelRef}
-            className="w-full max-w-xl rounded-card border border-surface-border bg-surface-overlay shadow-card-hover"
-          >
-            <h2 id="command-bar-title" className="sr-only">
-              Board search
-            </h2>
-
-            <div className="flex items-center gap-2 border-b border-surface-border p-4">
-              <span aria-hidden="true">🔍</span>
-              <input
-                ref={inputRef}
-                type="text"
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                aria-label="Search tasks"
-                placeholder="Search by name or description..."
-                className="min-w-0 flex-1 bg-transparent text-surface-text placeholder:text-surface-text-subtle focus:outline-none"
-              />
-              <kbd className="text-xs font-sans text-surface-text-subtle border border-surface-border rounded px-1.5 py-0.5">
-                Esc
-              </kbd>
-            </div>
-
-            <div className="flex flex-wrap gap-2 p-4">
-              <button
-                type="button"
-                onClick={() => setFilterStatus(null)}
-                aria-pressed={filterStatus === null}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle ${
-                  filterStatus === null
-                    ? 'border-primary bg-primary-muted text-primary-muted-text'
-                    : 'border-surface-border bg-surface-raised text-surface-text-muted hover:bg-surface-muted'
-                }`}
+          {trimmedDraft && (
+            <>
+              <div
+                role="presentation"
+                className="border-b border-surface-border px-3 pt-2 pb-1 text-xs uppercase tracking-wide text-surface-text-subtle"
               >
-                All
-                <span className="text-xs text-surface-text-subtle">
-                  {queryMatchedTasks.length}
-                </span>
-              </button>
-              {statuses.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() =>
-                    setFilterStatus(filterStatus === status ? null : status)
-                  }
-                  aria-pressed={filterStatus === status}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle ${
-                    filterStatus === status
-                      ? 'border-primary bg-primary-muted text-primary-muted-text'
-                      : 'border-surface-border bg-surface-raised text-surface-text-muted hover:bg-surface-muted'
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`inline-block h-2 w-2 shrink-0 rounded-full bg-status-${statusColor(status)}`}
-                  />
-                  {status}
-                  <span className="text-xs text-surface-text-subtle">
-                    {counts.get(status) ?? 0}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between gap-4 border-t border-surface-border px-4 py-3">
-              <p aria-live="polite" className="text-sm text-surface-text-subtle">
-                {filteredTasks.length}{' '}
-                {filteredTasks.length === 1 ? 'task' : 'tasks'} match
-              </p>
-              {isFiltering && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="rounded px-2 py-1 text-sm text-primary hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {noMatches && (
-        <div className="px-4 sm:px-6 pt-4">
+                Search
+              </div>
+              {renderOption(options[0], 0)}
+            </>
+          )}
           <div
-            role="status"
-            className="flex items-center justify-between gap-4 rounded-card border border-surface-border bg-surface-raised px-4 py-3 text-sm text-surface-text-muted"
+            role="presentation"
+            className="border-b border-surface-border px-3 pt-2 pb-1 text-xs uppercase tracking-wide text-surface-text-subtle"
           >
-            <span>No tasks match</span>
-            <button
-              type="button"
-              onClick={handleClear}
-              className="rounded px-2 py-1 text-sm text-primary hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
-            >
-              Clear filters
-            </button>
+            Filters
           </div>
+          {statusOptions.map((option, index) =>
+            renderOption(
+              { ...option, type: 'status' },
+              index + (trimmedDraft ? 1 : 0)
+            )
+          )}
         </div>
       )}
-    </>
+    </div>
   )
 }
 

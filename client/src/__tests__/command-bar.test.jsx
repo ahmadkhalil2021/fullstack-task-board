@@ -1,6 +1,6 @@
-// __tests__/command-bar.test.jsx — Keyboard, debounce, URL sync and filtering (Issue #25).
+// __tests__/command-bar.test.jsx — Odoo-style search bar behavior (Issue #25).
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import {
   MemoryRouter,
@@ -29,7 +29,7 @@ const LocationProbe = () => {
   return <span data-testid="location-search">{location.search}</span>
 }
 
-const renderBar = (initialEntry = '/board/b1', board = baseBoard) => {
+const resetStore = (board = baseBoard) => {
   useBoardStore.setState({
     board,
     isLoading: false,
@@ -37,6 +37,19 @@ const renderBar = (initialEntry = '/board/b1', board = baseBoard) => {
     query: '',
     filterStatus: null,
   })
+}
+
+const getInput = () => screen.getByRole('combobox', { name: 'Search tasks' })
+
+const openBar = () => {
+  const input = getInput()
+  if (document.activeElement === input) fireEvent.click(input)
+  else act(() => input.focus())
+  return input
+}
+
+const renderBar = (initialEntry = '/board/b1', board = baseBoard) => {
+  resetStore(board)
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <CommandBar />
@@ -45,115 +58,148 @@ const renderBar = (initialEntry = '/board/b1', board = baseBoard) => {
   )
 }
 
-const openBar = () => {
-  fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
-  return screen.getByRole('textbox', { name: 'Search tasks' })
-}
-
-const typeQuery = (input, value, advance = 150) => {
-  fireEvent.change(input, { target: { value } })
-  act(() => {
-    vi.advanceTimersByTime(advance)
-  })
+const renderBoardPage = () => {
+  resetStore()
+  const router = createMemoryRouter(
+    [{ path: '/board/:boardId', element: <BoardPage /> }],
+    { initialEntries: ['/board/b1'] }
+  )
+  return render(<RouterProvider router={router} />)
 }
 
 beforeEach(() => {
-  vi.useFakeTimers()
-})
-
-afterEach(() => {
-  vi.useRealTimers()
+  resetStore()
 })
 
 describe('CommandBar — opening and closing', () => {
-  it('renders an accessible search trigger', () => {
+  it('renders an always-visible combobox without a dropdown', () => {
     renderBar()
-    expect(screen.getByRole('button', { name: 'Search tasks' })).toBeInTheDocument()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(getInput()).toHaveAttribute('placeholder', 'Search...')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
 
-  it('opens on Ctrl+K and focuses the input', () => {
-    renderBar()
-    const input = openBar()
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(input).toHaveFocus()
-  })
-
-  it('opens on Meta+K as well', () => {
-    renderBar()
-    fireEvent.keyDown(window, { key: 'k', metaKey: true })
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
-
-  it('closes on Escape and restores focus to the trigger', () => {
-    renderBar()
-    const input = openBar()
-    fireEvent.keyDown(input, { key: 'Escape' })
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Search tasks' })).toHaveFocus()
-  })
-
-  it('closes on backdrop click but not on panel click', () => {
+  it('opens the filter dropdown on focus', () => {
     renderBar()
     openBar()
-    fireEvent.click(screen.getByRole('heading', { name: 'Board search' }))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('dialog'))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('listbox', { name: 'Search suggestions' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /^Completed/ })).toBeInTheDocument()
   })
 
-  it('keeps Tab focus inside the dialog', () => {
+  it('opens and focuses the input on Ctrl+K', () => {
+    renderBar()
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    expect(getInput()).toHaveFocus()
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+  })
+
+  it('opens and focuses the input on Meta+K', () => {
+    renderBar()
+    fireEvent.keyDown(window, { key: 'k', metaKey: true })
+    expect(getInput()).toHaveFocus()
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+  })
+
+  it('closes the dropdown on an outside click', () => {
+    renderBar()
+    openBar()
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it('Escape closes the dropdown, a second Escape clears the draft', () => {
     renderBar()
     const input = openBar()
-    fireEvent.keyDown(input, { key: 'Tab', shiftKey: true })
-    const dialog = screen.getByRole('dialog')
-    expect(dialog.contains(document.activeElement)).toBe(true)
-    expect(document.activeElement).not.toBe(input)
+    fireEvent.change(input, { target: { value: 'login' } })
+
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(input).toHaveValue('login')
+
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(input).toHaveValue('')
   })
 })
 
-describe('CommandBar — search and debounce', () => {
-  it('filters by name case-insensitively only after 150 ms', () => {
+describe('CommandBar — Odoo-style filter application', () => {
+  it('applies the quick-search option as a chip on Enter', () => {
     renderBar()
     const input = openBar()
-    fireEvent.change(input, { target: { value: 'LOGIN' } })
+    fireEvent.change(input, { target: { value: 'login' } })
 
-    act(() => {
-      vi.advanceTimersByTime(149)
-    })
-    expect(useBoardStore.getState().query).toBe('')
+    expect(
+      screen.getByRole('option', { name: /Name or description contains/i })
+    ).toBeInTheDocument()
 
-    act(() => {
-      vi.advanceTimersByTime(1)
-    })
-    expect(useBoardStore.getState().query).toBe('LOGIN')
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(useBoardStore.getState().query).toBe('login')
+    expect(input).toHaveValue('')
+    expect(screen.getByText('Search: login')).toBeInTheDocument()
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
     expect(useBoardStore.getState().getFilteredTasks().map((t) => t._id)).toEqual(['t1', 't2'])
-    expect(screen.getByTestId('location-search')).toHaveTextContent('q=LOGIN')
+    expect(screen.getByTestId('location-search')).toHaveTextContent('q=login')
   })
 
-  it('matches descriptions and cancels prior debounce timers on rapid typing', () => {
+  it('applies the quick-search option on click', () => {
+    renderBar()
+    const input = openBar()
+    fireEvent.change(input, { target: { value: 'docs' } })
+
+    fireEvent.mouseDown(screen.getByRole('option', { name: /Name or description contains/i }))
+    expect(useBoardStore.getState().query).toBe('docs')
+    expect(screen.getByText('Search: docs')).toBeInTheDocument()
+  })
+
+  it('moves the active option with arrow keys and applies it on Enter', () => {
     renderBar()
     const input = openBar()
 
-    fireEvent.change(input, { target: { value: 'a' } })
-    act(() => {
-      vi.advanceTimersByTime(100)
-    })
-    fireEvent.change(input, { target: { value: 'auth' } })
-    act(() => {
-      vi.advanceTimersByTime(149)
-    })
-    expect(useBoardStore.getState().query).toBe('')
-
-    act(() => {
-      vi.advanceTimersByTime(1)
-    })
-    expect(useBoardStore.getState().query).toBe('auth')
-    expect(useBoardStore.getState().getFilteredTasks().map((t) => t._id)).toEqual(['t1'])
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(useBoardStore.getState().filterStatus).toBe('Completed')
   })
 
-  it('derives status pills from arbitrary board statuses with live counts', () => {
+  it('toggles a status filter from the dropdown', () => {
+    renderBar()
+    openBar()
+
+    fireEvent.mouseDown(screen.getByRole('option', { name: /^Completed/ }))
+    expect(useBoardStore.getState().filterStatus).toBe('Completed')
+    expect(screen.getByText('Completed')).toBeInTheDocument()
+    expect(screen.getByTestId('location-search')).toHaveTextContent('f=completed')
+
+    openBar()
+    fireEvent.mouseDown(screen.getByRole('option', { name: /^Completed/ }))
+    expect(useBoardStore.getState().filterStatus).toBeNull()
+    expect(screen.queryByText('Completed')).not.toBeInTheDocument()
+  })
+
+  it('removes a facet chip with its remove button', () => {
+    renderBar()
+    openBar()
+    fireEvent.mouseDown(screen.getByRole('option', { name: /^Completed/ }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove filter: Completed' }))
+    expect(useBoardStore.getState().filterStatus).toBeNull()
+    expect(screen.getByTestId('location-search').textContent).not.toContain('f=')
+  })
+
+  it('Backspace on an empty input removes the last facet first', () => {
+    renderBar()
+    const input = openBar()
+    fireEvent.change(input, { target: { value: 'login' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    openBar()
+    fireEvent.mouseDown(screen.getByRole('option', { name: /^Completed/ }))
+
+    fireEvent.keyDown(input, { key: 'Backspace' })
+    expect(useBoardStore.getState().filterStatus).toBeNull()
+    expect(useBoardStore.getState().query).toBe('login')
+
+    fireEvent.keyDown(input, { key: 'Backspace' })
+    expect(useBoardStore.getState().query).toBe('')
+  })
+
+  it('derives filter options from arbitrary board statuses with counts', () => {
     const board = {
       ...baseBoard,
       statuses: ['Triage', 'Doing', 'Done'],
@@ -166,57 +212,21 @@ describe('CommandBar — search and debounce', () => {
     renderBar('/board/b1', board)
     openBar()
 
-    expect(screen.getByRole('button', { name: /^Triage/ })).toHaveTextContent('1')
-    expect(screen.getByRole('button', { name: /^Doing/ })).toHaveTextContent('2')
-    expect(screen.getByRole('button', { name: /^Done/ })).toHaveTextContent('0')
-    expect(screen.getByRole('button', { name: /^All/ })).toHaveTextContent('3')
+    expect(screen.getByRole('option', { name: /^Triage/ })).toHaveTextContent('1')
+    expect(screen.getByRole('option', { name: /^Doing/ })).toHaveTextContent('2')
+    expect(screen.getByRole('option', { name: /^Done/ })).toHaveTextContent('0')
   })
 })
 
-describe('CommandBar — status filter and URL sync', () => {
-  it('filters by status and writes the canonical key to the URL', () => {
-    renderBar()
-    openBar()
-
-    fireEvent.click(screen.getByRole('button', { name: /^Completed/ }))
-    expect(useBoardStore.getState().filterStatus).toBe('Completed')
-    expect(useBoardStore.getState().getFilteredTasks().map((t) => t._id)).toEqual(['t2'])
-    expect(screen.getByTestId('location-search')).toHaveTextContent('f=completed')
-  })
-
-  it('clears the status filter when All is selected', () => {
-    renderBar()
-    openBar()
-
-    fireEvent.click(screen.getByRole('button', { name: /^Completed/ }))
-    fireEvent.click(screen.getByRole('button', { name: /^All/ }))
-    expect(useBoardStore.getState().filterStatus).toBeNull()
-    expect(screen.getByTestId('location-search').textContent).not.toContain('f=')
-  })
-
-  it('Clear filters resets query, status and URL', () => {
-    renderBar()
-    const input = openBar()
-    typeQuery(input, 'login')
-    fireEvent.click(screen.getByRole('button', { name: /^Completed/ }))
-
-    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
-    expect(useBoardStore.getState().query).toBe('')
-    expect(useBoardStore.getState().filterStatus).toBeNull()
-
-    act(() => {
-      vi.advanceTimersByTime(150)
-    })
-    expect(screen.getByTestId('location-search').textContent).toBe('')
-  })
-
-  it('hydrates query and status from a deep link', () => {
+describe('CommandBar — URL sync', () => {
+  it('hydrates chips from a deep link without opening the dropdown', () => {
     renderBar('/board/b1?q=docs&f=completed')
 
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(useBoardStore.getState().query).toBe('docs')
     expect(useBoardStore.getState().filterStatus).toBe('Completed')
-    expect(useBoardStore.getState().getFilteredTasks().map((t) => t._id)).toEqual(['t2'])
+    expect(screen.getByText('Search: docs')).toBeInTheDocument()
+    expect(screen.getByText('Completed')).toBeInTheDocument()
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
     expect(screen.getByTestId('location-search')).toHaveTextContent('?q=docs&f=completed')
   })
 
@@ -229,39 +239,13 @@ describe('CommandBar — status filter and URL sync', () => {
   it('drops unknown status keys without filtering', () => {
     renderBar('/board/b1?f=nonsense')
     expect(useBoardStore.getState().filterStatus).toBeNull()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByTestId('location-search').textContent).toBe('')
-  })
-
-  it('shows the no-results state with a working clear action', () => {
-    renderBar()
-    const input = openBar()
-    typeQuery(input, 'zzz')
-
-    expect(screen.getByText('0 tasks match')).toBeInTheDocument()
-    fireEvent.keyDown(input, { key: 'Escape' })
-
-    expect(screen.getByText('No tasks match')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
-    expect(useBoardStore.getState().query).toBe('')
-    expect(screen.queryByText('No tasks match')).not.toBeInTheDocument()
   })
 })
 
 describe('CommandBar — BoardPage integration', () => {
-  it('renders only matched tasks and shrinks column counts', () => {
-    useBoardStore.setState({
-      board: baseBoard,
-      isLoading: false,
-      error: null,
-      query: '',
-      filterStatus: null,
-    })
-    const router = createMemoryRouter(
-      [{ path: '/board/:boardId', element: <BoardPage /> }],
-      { initialEntries: ['/board/b1'] }
-    )
-    render(<RouterProvider router={router} />)
+  it('filters tasks and shows the no-results state with a working clear action', () => {
+    renderBoardPage()
 
     expect(screen.getByText('Fix login bug')).toBeInTheDocument()
 
@@ -272,8 +256,13 @@ describe('CommandBar — BoardPage integration', () => {
     expect(screen.getByText('Write docs')).toBeInTheDocument()
 
     act(() => {
-      useBoardStore.getState().setFilterStatus('Completed')
+      useBoardStore.getState().setSearchQuery('zzz')
     })
-    expect(screen.getByText('Write docs')).toBeInTheDocument()
+    expect(screen.getByText('No tasks match')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(useBoardStore.getState().query).toBe('')
+    expect(screen.queryByText('No tasks match')).not.toBeInTheDocument()
+    expect(screen.getByText('Fix login bug')).toBeInTheDocument()
   })
 })

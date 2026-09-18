@@ -1,6 +1,7 @@
 // __tests__/board-header-persistence.test.jsx — Tests for board name/description persistence
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import * as api from '../lib/api.js'
 import BoardHeader from '../components/BoardHeader.jsx'
 import { useBoardStore } from '../store/useBoardStore.js'
@@ -23,16 +24,23 @@ beforeEach(() => {
 const getNameInput = () => screen.getByPlaceholderText('Board name')
 const getDescriptionInput = () => screen.getByPlaceholderText('Add a description...')
 
+const renderHeader = () =>
+  render(
+    <MemoryRouter>
+      <BoardHeader />
+    </MemoryRouter>
+  )
+
 describe('BoardHeader persistence', () => {
   it('renders empty drafts when no board is loaded', () => {
-    render(<BoardHeader />)
+    renderHeader()
     expect(getNameInput()).toHaveValue('')
     expect(getDescriptionInput()).toHaveValue('')
   })
 
   it('syncs drafts from the store when the board loads', () => {
     useBoardStore.setState({ board: { _id: 'b1', name: 'My Board', description: 'A description' } })
-    render(<BoardHeader />)
+    renderHeader()
     expect(getNameInput()).toHaveValue('My Board')
     expect(getDescriptionInput()).toHaveValue('A description')
   })
@@ -40,7 +48,7 @@ describe('BoardHeader persistence', () => {
   it('saves the board name and description on blur', async () => {
     api.updateBoard.mockResolvedValue({ _id: 'b1', name: 'New Name', description: 'New desc' })
     useBoardStore.setState({ board: { _id: 'b1', name: 'Old Name', description: '' } })
-    render(<BoardHeader />)
+    renderHeader()
 
     fireEvent.change(getNameInput(), { target: { value: 'New Name' } })
     fireEvent.blur(getNameInput())
@@ -52,7 +60,7 @@ describe('BoardHeader persistence', () => {
 
   it('rejects an empty name without calling the API', () => {
     useBoardStore.setState({ board: { _id: 'b1', name: 'Old Name', description: '' } })
-    render(<BoardHeader />)
+    renderHeader()
 
     fireEvent.change(getNameInput(), { target: { value: '   ' } })
     fireEvent.blur(getNameInput())
@@ -64,7 +72,7 @@ describe('BoardHeader persistence', () => {
   it('reverts the draft to the saved name when blur is fired with empty value', () => {
     api.updateBoard.mockResolvedValue({ _id: 'b1', name: 'Original', description: '' })
     useBoardStore.setState({ board: { _id: 'b1', name: 'Original', description: '' }, isLoading: false, error: null })
-    render(<BoardHeader />)
+    renderHeader()
 
     fireEvent.change(getNameInput(), { target: { value: '' } })
     fireEvent.blur(getNameInput())
@@ -77,7 +85,7 @@ describe('BoardHeader persistence', () => {
   it('surfaces a save error from the API', async () => {
     api.updateBoard.mockRejectedValue(new Error('Network error'))
     useBoardStore.setState({ board: { _id: 'b1', name: 'Old Name', description: '' } })
-    render(<BoardHeader />)
+    renderHeader()
 
     fireEvent.change(getNameInput(), { target: { value: 'New Name' } })
     fireEvent.blur(getNameInput())
@@ -89,7 +97,7 @@ describe('BoardHeader persistence', () => {
 
   it('does not call the API when drafts are unchanged', () => {
     useBoardStore.setState({ board: { _id: 'b1', name: 'My Board', description: 'A description' } })
-    render(<BoardHeader />)
+    renderHeader()
 
     fireEvent.blur(getNameInput())
 

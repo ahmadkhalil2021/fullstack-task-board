@@ -17,7 +17,6 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import BoardHeader from '../components/BoardHeader.jsx'
-import CommandBar from '../components/CommandBar.jsx'
 import Column from '../components/Column.jsx'
 import TaskForm from '../components/TaskForm.jsx'
 import TaskCard from '../components/TaskCard.jsx'
@@ -34,6 +33,7 @@ const BoardPage = () => {
   const addTask = useBoardStore(s => s.addTask)
   const query = useBoardStore(s => s.query)
   const filterStatus = useBoardStore(s => s.filterStatus)
+  const clearSearch = useBoardStore(s => s.clearSearch)
 
   const [editingTask, setEditingTask] = useState(null)
   const [draggingTask, setDraggingTask] = useState(null)
@@ -59,6 +59,7 @@ const BoardPage = () => {
     () => filterTasks(board?.tasks, query, filterStatus),
     [board?.tasks, query, filterStatus]
   )
+  const isFiltering = query !== '' || filterStatus !== null
 
   // Find the column a task belongs to
   const findColumnOfTask = (taskId) => {
@@ -170,7 +171,23 @@ const BoardPage = () => {
       ) : (
         <>
           <BoardHeader />
-          <CommandBar key={board._id} />
+          {isFiltering && visibleTasks.length === 0 && (
+            <div className="px-4 sm:px-6 pt-4">
+              <div
+                role="status"
+                className="mx-auto flex max-w-xl items-center justify-between gap-4 rounded-card border border-surface-border bg-surface-raised px-4 py-3 text-sm text-surface-text-muted"
+              >
+                <span>No tasks match</span>
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="rounded px-2 py-1 text-sm text-primary hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+                >
+                  Clear filters
+                </button>
+              </div>
+            </div>
+          )}
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}

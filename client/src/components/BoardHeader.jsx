@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { useBoardStore } from '../store/useBoardStore.js'
+import CommandBar from './CommandBar.jsx'
 import ThemeToggle from './ThemeToggle.jsx'
 import StatusManager from './StatusManager.jsx'
 import ActivityFeed from './ActivityFeed.jsx'
@@ -59,8 +60,8 @@ const BoardHeader = () => {
   }
 
   return (
-    <header className="flex items-start justify-between gap-4 px-4 sm:px-6 py-4 border-b border-surface-border bg-surface-raised transition-colors duration-200">
-      <div className="flex-1 min-w-0 max-w-2xl">
+    <header className="flex flex-col gap-3 px-4 sm:px-6 py-4 border-b border-surface-border bg-surface-raised transition-colors duration-200 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:gap-4">
+      <div className="order-1 min-w-0 max-w-2xl">
         <input
           type="text"
           value={draftName}
@@ -91,7 +92,10 @@ const BoardHeader = () => {
           </p>
         )}
       </div>
-      <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-muted border border-surface-border shrink-0">
+      <div className="order-3 w-full sm:order-2 sm:mx-auto sm:w-80 lg:w-96">
+        <CommandBar key={board?._id} />
+      </div>
+      <div className="order-2 flex items-center gap-1 p-1 rounded-lg bg-surface-muted border border-surface-border shrink-0 self-end sm:order-3 sm:self-auto sm:justify-self-end">
         <button
           type="button"
           onClick={() => setIsActivityOpen(true)}
