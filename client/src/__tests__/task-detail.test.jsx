@@ -1,7 +1,7 @@
 // __tests__/task-detail.test.jsx — Dedicated task page: fields, save, delete, navigation.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import * as api from '../lib/api.js'
@@ -32,17 +32,28 @@ const task = {
   updatedAt: TWO_HOURS_AGO,
 }
 
+const secondTask = {
+  _id: 't2',
+  name: 'Second task',
+  description: '',
+  icon: '⭐',
+  status: 'Completed',
+  order: 1,
+  createdAt: TWO_HOURS_AGO,
+  updatedAt: TWO_HOURS_AGO,
+}
+
 const board = {
   _id: 'b1',
   name: 'Board',
   description: '',
   statuses: ['In Progress', 'Completed'],
-  tasks: [task],
+  tasks: [task, secondTask],
 }
 
-const renderDetail = ({ entry = '/board/b1/task/t1', state } = {}) => {
+const renderDetail = ({ entry = '/board/b1/task/t1', state, storeBoard = board } = {}) => {
   useBoardStore.setState({
-    board,
+    board: storeBoard,
     isLoading: false,
     error: null,
     query: '',
@@ -59,7 +70,8 @@ const renderDetail = ({ entry = '/board/b1/task/t1', state } = {}) => {
     ],
     { initialEntries: [state ? { pathname: entry, state } : entry] }
   )
-  return render(<RouterProvider router={router} />)
+  const rendered = render(<RouterProvider router={router} />)
+  return { ...rendered, router }
 }
 
 beforeEach(() => {
@@ -115,6 +127,24 @@ describe('TaskDetailPage', () => {
   it('shows a not-found state for unknown task ids', () => {
     renderDetail({ entry: '/board/b1/task/missing' })
     expect(screen.getByText(/Task not found/)).toBeInTheDocument()
+  })
+
+  it('shows a not-found state when the board cannot be loaded', async () => {
+    api.fetchBoard.mockRejectedValue(new Error('Board not found'))
+    renderDetail({ entry: '/board/missing/task/t1', storeBoard: null })
+    expect(await screen.findByText(/the link may be invalid/)).toBeInTheDocument()
+  })
+
+  it('resets the form when navigating to another task', async () => {
+    const user = userEvent.setup()
+    const { router } = renderDetail()
+
+    await user.type(screen.getByLabelText('Name'), ' dirty')
+    await act(async () => {
+      await router.navigate('/board/b1/task/t2')
+    })
+
+    expect(screen.getByLabelText('Name')).toHaveValue('Second task')
   })
 
   it('links back to the board by default', () => {

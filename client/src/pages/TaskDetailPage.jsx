@@ -232,6 +232,7 @@ const TaskDetailForm = ({ task, backTo }) => {
 const TaskDetailPage = () => {
   const { boardId, taskId } = useParams()
   const board = useBoardStore(s => s.board)
+  const error = useBoardStore(s => s.error)
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const location = useLocation()
 
@@ -255,9 +256,18 @@ const TaskDetailPage = () => {
           >
             ← Back to board
           </Link>
-          <p role="status" className="mt-4 text-sm text-surface-text-muted">
-            Loading task...
-          </p>
+          {error ? (
+            <div
+              role="status"
+              className="mt-4 rounded-card border border-surface-border bg-surface-raised px-4 py-3 text-sm text-surface-text-muted"
+            >
+              Board not found — the link may be invalid.
+            </div>
+          ) : (
+            <p role="status" className="mt-4 text-sm text-surface-text-muted">
+              Loading task...
+            </p>
+          )}
         </div>
       </div>
     )
@@ -290,7 +300,7 @@ const TaskDetailPage = () => {
   return (
     <div className="min-h-screen bg-surface-subtle flex flex-col">
       <ErrorBanner />
-      <TaskDetailForm key={task._id} task={task} backTo={backTo} />
+      <TaskDetailForm key={`${board._id}-${task._id}`} task={task} backTo={backTo} />
     </div>
   )
 }
