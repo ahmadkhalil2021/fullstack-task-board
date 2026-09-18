@@ -14,6 +14,7 @@ process.env.MONGODB_URI = ''
 // Import after env is set
 const { default: app } = await import('../index.js')
 const { connectDB } = await import('../db.js')
+const { default: Activity } = await import('../models/Activity.js')
 
 before(async () => {
   mongo = await MongoMemoryServer.create()
@@ -223,6 +224,113 @@ test('POST /api/tasks rejects non-numeric order', async () => {
   })
   assert.equal(res.status, 400)
   assert.equal(res.body.error.code, 'VALIDATION_ERROR')
+})
+
+// --- dueDate / priority (Issue #28) ---
+
+test('POST /api/tasks defaults dueDate to null and priority to none', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const res = await request(app).post('/api/tasks').send({
+    status: 'A',
+    parentBoardId: board._id,
+  })
+
+  assert.equal(res.status, 201)
+  assert.equal(res.body.data.task.dueDate, null)
+  assert.equal(res.body.data.task.priority, 'none')
+})
+
+test('POST /api/tasks persists dueDate and priority', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const res = await request(app).post('/api/tasks').send({
+    status: 'A',
+    parentBoardId: board._id,
+    dueDate: '2026-08-30',
+    priority: 'high',
+  })
+
+  assert.equal(res.status, 201)
+  assert.equal(res.body.data.task.dueDate.slice(0, 10), '2026-08-30')
+  assert.equal(res.body.data.task.priority, 'high')
+})
+
+test('POST /api/tasks rejects invalid priority', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const res = await request(app).post('/api/tasks').send({
+    status: 'A',
+    parentBoardId: board._id,
+    priority: 'urgent',
+  })
+
+  assert.equal(res.status, 400)
+  assert.equal(res.body.error.code, 'VALIDATION_ERROR')
+})
+
+test('POST /api/tasks rejects invalid dueDate', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const res = await request(app).post('/api/tasks').send({
+    status: 'A',
+    parentBoardId: board._id,
+    dueDate: 'not-a-date',
+  })
+
+  assert.equal(res.status, 400)
+  assert.equal(res.body.error.code, 'VALIDATION_ERROR')
+})
+
+test('PUT /api/tasks/:taskId updates dueDate and priority', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const taskId = board.tasks[0]._id
+
+  const res = await request(app)
+    .put(`/api/tasks/${taskId}`)
+    .send({ dueDate: '2026-09-15', priority: 'medium' })
+
+  assert.equal(res.status, 200)
+  assert.equal(res.body.data.task.dueDate.slice(0, 10), '2026-09-15')
+  assert.equal(res.body.data.task.priority, 'medium')
+})
+
+test('PUT /api/tasks/:taskId clears dueDate with null and leaves priority untouched', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const taskId = board.tasks[0]._id
+  await request(app)
+    .put(`/api/tasks/${taskId}`)
+    .send({ dueDate: '2026-09-15', priority: 'high' })
+
+  const res = await request(app).put(`/api/tasks/${taskId}`).send({ dueDate: null })
+
+  assert.equal(res.status, 200)
+  assert.equal(res.body.data.task.dueDate, null)
+  assert.equal(res.body.data.task.priority, 'high')
+})
+
+test('PUT /api/tasks/:taskId rejects invalid dueDate and priority', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const taskId = board.tasks[0]._id
+
+  const badDate = await request(app).put(`/api/tasks/${taskId}`).send({ dueDate: 'nope' })
+  assert.equal(badDate.status, 400)
+  assert.equal(badDate.body.error.code, 'VALIDATION_ERROR')
+
+  const badPriority = await request(app).put(`/api/tasks/${taskId}`).send({ priority: 'urgent' })
+  assert.equal(badPriority.status, 400)
+  assert.equal(badPriority.body.error.code, 'VALIDATION_ERROR')
+})
+
+test('PUT /api/tasks/:taskId records dueDate/priority changes as activity', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const taskId = board.tasks[0]._id
+  await request(app).put(`/api/tasks/${taskId}`).send({ priority: 'high' })
+
+  const activity = await Activity.findOne({
+    boardId: board._id,
+    type: 'task_updated',
+    'changes.priority': { $exists: true },
+  })
+
+  assert.ok(activity)
+  assert.equal(activity.changes.priority.to, 'high')
 })
 
 // --- PUT /api/tasks/:taskId/order ---

@@ -32,6 +32,11 @@ export const updateBoard = (boardId, data) =>
   request(`/boards/${boardId}`, { method: 'PUT', body: JSON.stringify(data) })
     .then((res) => res.data.board)
 
+/**
+ * Update a task. `data` may contain any of:
+ * name, description, icon, status (board status name),
+ * dueDate (ISO date string or null to clear), priority ('none'|'low'|'medium'|'high').
+ */
 export const updateTask = (taskId, data) =>
   request(`/tasks/${taskId}`, { method: 'PUT', body: JSON.stringify(data) })
     .then((res) => res.data.task)
@@ -44,6 +49,11 @@ export const deleteTask = (taskId) =>
   request(`/tasks/${taskId}`, { method: 'DELETE' })
     .then((res) => res.data)
 
+/**
+ * Create a task. Required: status, parentBoardId.
+ * Optional: name, description, icon, order,
+ * dueDate (ISO date string or null), priority ('none'|'low'|'medium'|'high').
+ */
 export const createTask = (data) =>
   request('/tasks', { method: 'POST', body: JSON.stringify(data) })
     .then((res) => res.data.task)

@@ -8,6 +8,8 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useBoardStore } from '../store/useBoardStore.js'
 import { formatRelativeTime } from '../lib/formatRelativeTime.js'
 import { statusColor } from '../lib/statusColor.js'
+import { toDateInputValue } from '../lib/dueDate.js'
+import { PRIORITY_VALUES, priorityLabel } from '../lib/priority.js'
 import ErrorBanner from '../components/ErrorBanner.jsx'
 
 const ICONS = ['⏰', '🚀', '🎯', '⭐', '🏁', '✅', '❌', '🔥', '💡', '📌']
@@ -46,6 +48,8 @@ const TaskDetailForm = ({ task, backTo }) => {
   const [name, setName] = useState(task.name)
   const [description, setDescription] = useState(task.description ?? '')
   const [icon, setIcon] = useState(task.icon)
+  const [dueDate, setDueDate] = useState(() => toDateInputValue(task.dueDate))
+  const [priority, setPriority] = useState(task.priority ?? 'none')
   const [isSaving, setIsSaving] = useState(false)
   const [isStatusSaving, setIsStatusSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -64,12 +68,16 @@ const TaskDetailForm = ({ task, backTo }) => {
   const hasChanges =
     name !== task.name ||
     description !== (task.description ?? '') ||
-    icon !== task.icon
+    icon !== task.icon ||
+    dueDate !== toDateInputValue(task.dueDate) ||
+    priority !== (task.priority ?? 'none')
 
   const handleDiscard = () => {
     setName(task.name)
     setDescription(task.description ?? '')
     setIcon(task.icon)
+    setDueDate(toDateInputValue(task.dueDate))
+    setPriority(task.priority ?? 'none')
     setSaved(false)
   }
 
@@ -91,7 +99,13 @@ const TaskDetailForm = ({ task, backTo }) => {
     setIsSaving(true)
     setSaved(false)
     try {
-      await updateTask(task._id, { name: name.trim(), description, icon })
+      await updateTask(task._id, {
+        name: name.trim(),
+        description,
+        icon,
+        dueDate: dueDate || null,
+        priority,
+      })
       setSaved(true)
     } catch {
       // Store rolled back and set the error banner.
@@ -249,6 +263,65 @@ const TaskDetailForm = ({ task, backTo }) => {
                 minRows={4}
               />
             </label>
+
+            <label htmlFor="task-due-date" className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-surface-text-subtle">
+                Due date
+              </span>
+              <input
+                id="task-due-date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => {
+                  setDueDate(e.target.value)
+                  setSaved(false)
+                }}
+                className="mt-1 w-full px-3 py-2 border border-surface-border-strong rounded bg-surface-raised text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+              />
+            </label>
+
+            <div>
+              <span
+                id="task-priority-label"
+                className="text-xs font-medium uppercase tracking-wide text-surface-text-subtle"
+              >
+                Priority
+              </span>
+              <div
+                role="radiogroup"
+                aria-labelledby="task-priority-label"
+                className="mt-1 flex flex-wrap gap-1"
+              >
+                {PRIORITY_VALUES.map((value) => {
+                  const isActive = priority === value
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={isActive}
+                      onClick={() => {
+                        setPriority(value)
+                        setSaved(false)
+                      }}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle ${
+                        isActive
+                          ? 'border-primary bg-primary-muted font-semibold text-primary-muted-text'
+                          : 'border-surface-border bg-surface-raised text-surface-text-muted hover:bg-surface-muted'
+                      }`}
+                    >
+                      {value !== 'none' && (
+                        <span
+                          aria-hidden="true"
+                          className={`inline-block h-2 w-2 shrink-0 rounded-full bg-priority-${value}`}
+                        />
+                      )}
+                      {priorityLabel(value)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
             <div>
               <span className="text-xs font-medium uppercase tracking-wide text-surface-text-subtle">

@@ -34,6 +34,11 @@ export default {
           wontdo: 'rgb(244 63 94 / <alpha-value>)',
           blocked: 'rgb(245 158 11 / <alpha-value>)',
         },
+        priority: {
+          low: 'rgb(56 189 248 / <alpha-value>)',
+          medium: 'rgb(245 158 11 / <alpha-value>)',
+          high: 'rgb(239 68 68 / <alpha-value>)',
+        },
         primary: {
           DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
           hover: 'rgb(var(--primary-hover) / <alpha-value>)',
@@ -102,5 +107,8 @@ export default {
     'text-status-done',
     'text-status-wontdo',
     'text-status-blocked',
+    'bg-priority-low',
+    'bg-priority-medium',
+    'bg-priority-high',
   ],
 }
