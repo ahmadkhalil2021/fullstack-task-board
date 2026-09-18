@@ -120,21 +120,31 @@ describe('TaskDetailPage', () => {
     expect(await screen.findByText('Saved')).toBeInTheDocument()
   })
 
-  it('applies a clicked statusbar stage on save', async () => {
+  it('saves a clicked statusbar stage immediately without pressing Save', async () => {
     const user = userEvent.setup()
     api.updateTask.mockImplementation((id, data) => Promise.resolve({ ...task, ...data }))
     renderDetail()
 
     await user.click(screen.getByRole('radio', { name: 'Completed' }))
-    expect(screen.getByRole('radio', { name: 'Completed' })).toHaveAttribute('aria-checked', 'true')
 
-    await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => {
-      expect(api.updateTask).toHaveBeenCalledWith(
-        't1',
-        expect.objectContaining({ status: 'Completed' })
-      )
+      expect(api.updateTask).toHaveBeenCalledWith('t1', { status: 'Completed' })
     })
+    expect(screen.getByRole('radio', { name: 'Completed' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
+  it('reverts the statusbar when the immediate status save fails', async () => {
+    const user = userEvent.setup()
+    api.updateTask.mockRejectedValue(new Error('Update failed'))
+    renderDetail()
+
+    await user.click(screen.getByRole('radio', { name: 'Completed' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: 'In Progress' })).toHaveAttribute('aria-checked', 'true')
+    })
+    expect(useBoardStore.getState().error).toBe('Update failed')
   })
 
   it('discards local edits', async () => {

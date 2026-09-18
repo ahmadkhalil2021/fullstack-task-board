@@ -1,6 +1,7 @@
 // TaskDetailPage.jsx — Odoo-style form view for a single task.
 // Replaces the former TaskForm modal: /board/:boardId/task/:taskId.
 // Control panel (breadcrumb + Save/Discard), statusbar stages, form sheet.
+// Statusbar clicks save immediately; Save covers the remaining fields.
 
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -45,8 +46,8 @@ const TaskDetailForm = ({ task, backTo }) => {
   const [name, setName] = useState(task.name)
   const [description, setDescription] = useState(task.description ?? '')
   const [icon, setIcon] = useState(task.icon)
-  const [status, setStatus] = useState(task.status)
   const [isSaving, setIsSaving] = useState(false)
+  const [isStatusSaving, setIsStatusSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [now, setNow] = useState(Date.now())
@@ -58,25 +59,39 @@ const TaskDetailForm = ({ task, backTo }) => {
   }, [])
 
   const statuses = board?.statuses ?? []
+  // Statusbar changes save immediately, so Save only covers the other fields.
+  const status = task.status
   const hasChanges =
     name !== task.name ||
     description !== (task.description ?? '') ||
-    icon !== task.icon ||
-    status !== task.status
+    icon !== task.icon
 
   const handleDiscard = () => {
     setName(task.name)
     setDescription(task.description ?? '')
     setIcon(task.icon)
-    setStatus(task.status)
     setSaved(false)
+  }
+
+  const handleStatusSelect = async (stage) => {
+    if (stage === task.status || isStatusSaving || isSaving) return
+    setIsStatusSaving(true)
+    setSaved(false)
+    try {
+      await updateTask(task._id, { status: stage })
+    } catch {
+      // Store rolled back the optimistic change and set the error banner;
+      // the statusbar follows the store again.
+    } finally {
+      setIsStatusSaving(false)
+    }
   }
 
   const handleSave = async () => {
     setIsSaving(true)
     setSaved(false)
     try {
-      await updateTask(task._id, { name: name.trim(), description, icon, status })
+      await updateTask(task._id, { name: name.trim(), description, icon })
       setSaved(true)
     } catch {
       // Store rolled back and set the error banner.
@@ -154,11 +169,9 @@ const TaskDetailForm = ({ task, backTo }) => {
                   type="button"
                   role="radio"
                   aria-checked={isActive}
-                  onClick={() => {
-                    setStatus(stage)
-                    setSaved(false)
-                  }}
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle ${
+                  onClick={() => handleStatusSelect(stage)}
+                  disabled={isStatusSaving || isSaving}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle disabled:cursor-not-allowed disabled:opacity-50 ${
                     isActive
                       ? 'border-primary bg-primary-muted font-semibold text-primary-muted-text'
                       : 'border-surface-border bg-surface-raised text-surface-text-muted hover:bg-surface-muted'
