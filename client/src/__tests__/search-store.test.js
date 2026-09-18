@@ -72,10 +72,17 @@ describe('status keys', () => {
     expect(resolveStatusKey('', baseBoard.statuses)).toBeNull()
   })
 
-  it('disambiguates colliding labels deterministically', () => {
+  it('keeps plain keys when labels do not collide', () => {
+    expect(statusKeyFor('Completed', baseBoard.statuses)).toBe('completed')
+    expect(statusKeyFor("Won't do", baseBoard.statuses)).toBe('won-t-do')
+  })
+
+  it('rejects ambiguous base keys and accepts disambiguated ones', () => {
     const statuses = ['Done', 'done']
-    expect(statusKeyFor('Done', statuses)).toBe('done')
+    expect(statusKeyFor('Done', statuses)).toBe('done-1')
     expect(statusKeyFor('done', statuses)).toBe('done-2')
+    expect(resolveStatusKey('done', statuses)).toBeNull()
+    expect(resolveStatusKey('done-1', statuses)).toBe('Done')
     expect(resolveStatusKey('done-2', statuses)).toBe('done')
   })
 })

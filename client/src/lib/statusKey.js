@@ -22,19 +22,28 @@ export const toStatusKey = (status) => {
     .replace(/^-+|-+$/g, '')
 }
 
-// Two labels can normalize to the same key ("Done" / "done!"). Disambiguate
-// generated links with a numeric suffix so each status keeps a unique key.
+// Two labels can normalize to the same key ("Done" / "done!"). When that
+// happens every colliding status gets a numbered key (`done-1`, `done-2`) and
+// the plain base key is rejected on read, so an ambiguous URL can never filter
+// one of the colliding statuses by accident.
 export const buildStatusKeyMap = (statuses = []) => {
   const statusToKey = new Map()
   const keyToStatus = new Map()
-  const keyCounts = new Map()
+  const keyTotals = new Map()
+  const keySeen = new Map()
 
   statuses.forEach((status) => {
     const base = toStatusKey(status)
     if (!base) return
-    const count = (keyCounts.get(base) ?? 0) + 1
-    keyCounts.set(base, count)
-    const key = count === 1 ? base : `${base}-${count}`
+    keyTotals.set(base, (keyTotals.get(base) ?? 0) + 1)
+  })
+
+  statuses.forEach((status) => {
+    const base = toStatusKey(status)
+    if (!base) return
+    const occurrence = (keySeen.get(base) ?? 0) + 1
+    keySeen.set(base, occurrence)
+    const key = keyTotals.get(base) > 1 ? `${base}-${occurrence}` : base
     statusToKey.set(status, key)
     keyToStatus.set(key, status)
   })
