@@ -9,12 +9,12 @@ Add URL-addressable Grid and Table views to the existing board shell so users ca
 ### Routing and view identity
 
 - Add explicit routes in `client/src/App.jsx:13-19` for `/board/:boardId/grid` and `/board/:boardId/table`, before the generic `/board/:boardId` route. React Router therefore keeps unknown board sub-paths on `NotFoundPage` rather than silently rendering Kanban.
-- Extend `client/src/lib/useView.js:7-13` to return exactly `'kanban' | 'list' | 'grid' | 'table'` only for the exact three-segment paths `board/:boardId`, `board/:boardId/list`, `board/:boardId/grid`, and `board/:boardId/table`. A malformed path must not be treated as a valid view; the explicit router remains the 404 authority.
-- Extend `client/src/components/ViewSwitcher.jsx:7-39` to `Kanban | List | Grid | Table`, in that order. Continue using `location.search` verbatim so `?q=` and `?f=` survive every switch. Keep the navigation right-aligned in `BoardPage` and retain `aria-current="page"` on the active link.
+- Extend `client/src/lib/useView.js:7-13` to return exactly `'kanban' | 'grid' | 'table'` only for the exact three-segment paths `board/:boardId`, `board/:boardId/grid`, and `board/:boardId/table`. A malformed path must not be treated as a valid view; the explicit router remains the 404 authority.
+- Extend `client/src/components/ViewSwitcher.jsx:7-39` to `Kanban | Grid | Table`, in that order. Continue using `location.search` verbatim so `?q=` and `?f=` survive every switch. Keep the navigation right-aligned in `BoardPage` and retain `aria-current="page"` on the active link.
 
 ### State and navigation
 
-- Keep board tasks, query, and `filterStatus` in `useBoardStore`; derive `visibleTasks` with `filterTasks` in each view, matching `client/src/views/ListView.jsx:27-30` and `client/src/views/KanbanBoard.jsx:39-42`.
+- Keep board tasks, query, and `filterStatus` in `useBoardStore`; derive `visibleTasks` with `filterTasks` in each view, matching `client/src/views/GridView.jsx` and `client/src/views/KanbanBoard.jsx:39-42`.
 - Keep `BoardPage.openTask` (`client/src/pages/BoardPage.jsx:28-32`) as the only navigation source. Grid cards, the add flow, and table rows call `onTaskClick`; they never call `useNavigate` or the API.
 - Use the existing optimistic `addTask` action (`client/src/store/useBoardStore.js:332-391`) with `board.statuses[0]`, then pass the returned real task to `onTaskClick`. This preserves the detail URL and `location.state.from`.
 
@@ -28,7 +28,7 @@ Add URL-addressable Grid and Table views to the existing board shell so users ca
 ### Table design and icon decision
 
 - Create `client/src/views/TableView.jsx` with a semantic `<table>`, `<thead>`, `<tbody>`, and sortable headers for `Name`, `Status`, `Created`, and `Updated`.
-- The issue names `Name · Status · Icon · Created · Updated`. Recommendation: render the task icon in the `Name` cell, exactly as the established List view does (`client/src/views/ListView.jsx:98-108`), rather than adding a narrow standalone Icon column. The icon is decorative context for the name, a separate column duplicates visual noise, and the integrated cell is more usable on narrow screens. Keep this as a product decision (see section 11); if Product requires a separate Icon column, add it between Status and Created without changing sorting or navigation behavior.
+- The issue names `Name · Status · Icon · Created · Updated`. Recommendation: render the task icon in the `Name` cell, as the existing board views do, rather than adding a narrow standalone Icon column. The icon is decorative context for the name, a separate column duplicates visual noise, and the integrated cell is more usable on narrow screens. Keep this as a product decision (see section 11); if Product requires a separate Icon column, add it between Status and Created without changing sorting or navigation behavior.
 - Use local `useState` for `sortKey` and `sortDir`, `useMemo` for the filtered/sorted rows, and a per-board `sessionStorage` key such as `board-view-table:${boardId}`. Persist only validated values; on malformed JSON, an unknown key, or an invalid direction, use a deterministic default (`createdAt`, `desc`). Storage access must be guarded because browser storage can throw.
 - Clicking the active header reverses direction; clicking another sortable header starts ascending. Put a real `button` inside each sortable `<th>`, set `aria-sort="ascending"`/`"descending"` only on the active header and `aria-sort="none"` on the others, and show `▲`/`▼` only for the active key.
 - Make each data row keyboard reachable with `tabIndex={0}`, `aria-keyshortcuts="Enter"`, and an `onKeyDown` handler that invokes `onTaskClick(task)` for Enter. Avoid nested interactive controls in a row; header sort buttons are outside the data-row interaction.
@@ -36,7 +36,7 @@ Add URL-addressable Grid and Table views to the existing board shell so users ca
 ### Shared status presentation
 
 - Create `client/src/components/StatusBadge.jsx` with `StatusBadge({ status })`. It renders the status name and a decorative dot using `statusColor(status)` (`client/src/lib/statusColor.js:12-19`), Tailwind token classes, and `aria-hidden="true"` on the dot.
-- Use it in Grid and Table. Refactor List only if the rendered markup and behavior remain equivalent; otherwise leave List unchanged to reduce regression risk. The component must support arbitrary board status strings and the existing light/dark tokens.
+- Use it in Grid and Table. The component must support arbitrary board status strings and the existing light/dark tokens.
 
 ## 3. State Machine / Flow
 
@@ -46,7 +46,6 @@ Add URL-addressable Grid and Table views to the existing board shell so users ca
 URL pathname
     │
     ├── /board/:boardId          → useView() = kanban
-    ├── /board/:boardId/list     → useView() = list
     ├── /board/:boardId/grid     → useView() = grid
     ├── /board/:boardId/table    → useView() = table
     └── any unknown path          → router wildcard → NotFoundPage (404)
@@ -59,7 +58,7 @@ User clicks ViewSwitcher link
         ▼
 BoardPage reads useView()
         │
-        ├── renders KanbanBoard / ListView / GridView / TableView
+        ├── renders KanbanBoard / GridView / TableView
         └── keeps shared filter banner and BoardPage.openTask
 ```
 
@@ -113,21 +112,20 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 - **Create** `client/src/components/StatusBadge.jsx` — shared status token/name presentation.
 - **Create** `client/src/views/GridView.jsx` — responsive, filtered, newest-first card wall and add/empty states.
 - **Create** `client/src/views/TableView.jsx` — filtered sortable table, keyboard rows, and session persistence.
-- **Optionally modify** `client/src/views/ListView.jsx:98-117` — use `StatusBadge` only if output and behavior remain unchanged.
 - **Create** `client/src/__tests__/grid-view.test.jsx` — at least 10 Grid cases.
 - **Create** `client/src/__tests__/table-view.test.jsx` — at least 10 Table cases.
 - **Modify** `client/src/__tests__/routing.test.jsx:34-109` — cover `/grid` and `/table` and retain unknown-subpath 404 coverage.
-- **Modify** `client/src/__tests__/view-switcher.test.jsx:8-41` — cover four links, active state, order, and query preservation.
-- **Optionally modify** `client/src/__tests__/list-view.test.jsx` — only for a `StatusBadge` refactor regression check.
+- **Modify** `client/src/__tests__/view-switcher.test.jsx:8-41` — cover the view links, active state, order, and query preservation.
+- **Modify** `client/src/__tests__/use-view.test.jsx` — direct exact-path mapping coverage.
 
 ## 6. Implementation Steps
 
 1. Modify `client/src/App.jsx:13-19` and `client/src/lib/useView.js:7-13` to register and recognize the two exact routes while retaining wildcard 404 semantics.
-2. Modify `client/src/components/ViewSwitcher.jsx:7-39` and `client/src/pages/BoardPage.jsx:1-119` to expose all four views, keep the switcher right-aligned, and route view selection through `useView`.
+2. Modify `client/src/components/ViewSwitcher.jsx:7-39` and `client/src/pages/BoardPage.jsx:1-119` to expose all board views, keep the switcher right-aligned, and route view selection through `useView`.
 3. Create `client/src/components/StatusBadge.jsx` and modify `client/src/components/AddTaskButton.jsx:1-14` only as required for reusable Grid placement; keep Tailwind-only styling and decorative icons hidden from assistive technology.
 4. Create `client/src/views/GridView.jsx` using store selectors, `filterTasks`, `TaskCard`, `StatusBadge`, `AddTaskButton`, newest-first sorting, guarded add flow, and filtered/empty states.
 5. Create `client/src/views/TableView.jsx` with validated per-board session storage, `useMemo` sorting, header buttons, `aria-sort`, `▲`/`▼`, focus styles, and Enter navigation through `onTaskClick`.
-6. Optionally modify `client/src/views/ListView.jsx:98-117` to consume `StatusBadge` only after confirming no markup or behavior regression.
+6. Create `client/src/views/TableView.jsx` add affordances and `client/src/__tests__/use-view.test.jsx` exact-path coverage.
 7. Modify `client/src/__tests__/routing.test.jsx:34-109` and `client/src/__tests__/view-switcher.test.jsx:8-41` for route, active-pill, order, query, and 404 coverage.
 8. Create `client/src/__tests__/grid-view.test.jsx` and `client/src/__tests__/table-view.test.jsx`, then run the existing test suite and `vite build`.
 
@@ -138,7 +136,7 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 - **Board loading/not found/no statuses:** `BoardPage` retains its existing loading, `ErrorBanner`, and `EmptyBoard` branches. Views return `null` when no board is available and are not rendered when statuses are empty.
 - **No tasks:** Grid displays centered `Add your first task`; Table displays an accessible empty row and still provides its add affordance. A filtered zero-result list does not replace the shared `No tasks match` banner in `BoardPage`.
 - **Filter changes:** both views recalculate from `filterTasks`; sorting applies after filtering. Clearing the shared filter immediately restores rows/cards.
-- **Rapid add clicks/API failure:** use a synchronous ref plus disabled state, as in `ListView` (`client/src/views/ListView.jsx:17-25`, `43-57`); rely on store rollback and `ErrorBanner`.
+- **Rapid add clicks/API failure:** use a synchronous ref plus disabled state, as in `GridView` (`client/src/views/GridView.jsx`); rely on store rollback and `ErrorBanner`.
 - **Missing/invalid dates:** use a stable fallback ordering and display `formatRelativeTime`'s `recently` fallback (`client/src/lib/formatRelativeTime.js:7-17`). Never throw during render.
 - **Unknown status names:** `statusColor` returns `todo`; `StatusBadge` must still render the original name.
 - **Malformed or unavailable sessionStorage:** catch reads/writes, validate keys and directions, and continue with the default sort without blocking rendering.
@@ -184,7 +182,7 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 
 - Extend `client/src/__tests__/routing.test.jsx:34-109` for both routes, active rendered views, and unknown sub-path 404 behavior.
 - Extend `client/src/__tests__/view-switcher.test.jsx:8-41` for four links, exact hrefs, order, active `aria-current`, and `?q=`/`?f=` retention.
-- Keep all existing tests passing (issue baseline: 71 tests), including List navigation/filter tests in `client/src/__tests__/list-view.test.jsx:132-175`.
+- Keep all existing tests passing.
 - Run `npm test` (or the repository's configured Vitest command) and `npm run build --workspace=client`; verify `vite build` is clean.
 
 ## 9. Acceptance Criteria
@@ -197,7 +195,7 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 - [ ] Table sort state persists per board ID in `sessionStorage` and safely falls back for invalid values.
 - [ ] Table rows are keyboard reachable; Enter and pointer activation use `BoardPage.openTask` and open the detail page.
 - [ ] Both views respect query/status filtering and the shared `No tasks match` banner.
-- [ ] ViewSwitcher exposes exactly `Kanban | List | Grid | Table`, keeps query parameters, marks the active view with `aria-current`, and remains right-aligned.
+- [ ] ViewSwitcher exposes exactly `Kanban | Grid | Table`, keeps query parameters, marks the active view with `aria-current`, and remains right-aligned.
 - [ ] Unknown board sub-paths still render 404; browser back/forward moves naturally between views.
 - [ ] Light and dark themes have parity; decorative icons use `aria-hidden="true"` and focus states are visible.
 - [ ] No backend files or new dependencies are added.
