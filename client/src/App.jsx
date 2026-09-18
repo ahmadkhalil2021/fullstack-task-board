@@ -11,6 +11,7 @@ import NotFoundPage from './pages/NotFoundPage.jsx'
 // Routes are matched top-to-bottom; first match wins.
 const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
+  { path: '/board/:boardId/list', element: <BoardPage /> },
   { path: '/board/:boardId', element: <BoardPage /> },
   { path: '*', element: <NotFoundPage /> },
 ])

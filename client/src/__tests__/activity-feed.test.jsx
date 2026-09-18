@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as api from '../lib/api.js'
 import ActivityFeed from '../components/ActivityFeed.jsx'
+import { formatRelativeTime } from '../lib/formatRelativeTime.js'
 import { useBoardStore } from '../store/useBoardStore.js'
 
 vi.mock('../lib/api.js', () => ({
@@ -88,6 +89,21 @@ describe('useBoardStore activity slice', () => {
     expect(activity).toHaveLength(1)
     expect(activity[0].type).toBe('task_moved')
     expect(activity[0].changes.status).toEqual({ from: 'In progress', to: 'Done' })
+  })
+})
+
+describe('formatRelativeTime', () => {
+  const now = new Date('2026-09-18T12:00:00.000Z').getTime()
+
+  it('formats minutes, hours and days relative to now', () => {
+    expect(formatRelativeTime('2026-09-18T11:30:00.000Z', now)).toBe('30 minutes ago')
+    expect(formatRelativeTime('2026-09-18T10:00:00.000Z', now)).toBe('2 hours ago')
+    expect(formatRelativeTime('2026-09-15T12:00:00.000Z', now)).toBe('3 days ago')
+  })
+
+  it('falls back for missing or invalid timestamps', () => {
+    expect(formatRelativeTime(undefined, now)).toBe('recently')
+    expect(formatRelativeTime('not-a-date', now)).toBe('recently')
   })
 })
 

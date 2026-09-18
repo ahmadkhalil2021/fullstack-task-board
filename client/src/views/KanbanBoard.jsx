@@ -1,0 +1,149 @@
+// KanbanBoard.jsx — Drag-and-drop Kanban surface for the open board.
+// Renders the filtered task set; drag resolution always inspects the full
+// board.tasks list so a filter cannot corrupt status or order changes.
+
+import { useMemo, useRef, useState } from 'react'
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  DragOverlay,
+} from '@dnd-kit/core'
+import { SortableContext, sortableKeyboardCoordinates, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
+import Column from '../components/Column.jsx'
+import TaskCard from '../components/TaskCard.jsx'
+
+const KanbanBoard = ({ onTaskClick }) => {
+  const board = useBoardStore(s => s.board)
+  const query = useBoardStore(s => s.query)
+  const filterStatus = useBoardStore(s => s.filterStatus)
+  const updateTask = useBoardStore(s => s.updateTask)
+  const reorderTasksInColumn = useBoardStore(s => s.reorderTasksInColumn)
+  const addTask = useBoardStore(s => s.addTask)
+
+  const [draggingTask, setDraggingTask] = useState(null)
+  const [isAddingTask, setIsAddingTask] = useState(false)
+  // Synchronous guard so two rapid clicks can't both start a create before
+  // the `isAddingTask` state re-render disables the button.
+  const hasStarted = useRef(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const visibleTasks = useMemo(
+    () => filterTasks(board?.tasks, query, filterStatus),
+    [board?.tasks, query, filterStatus]
+  )
+
+  // Find the column a task belongs to
+  const findColumnOfTask = (taskId) => {
+    if (!board) return null
+    return board.tasks.find((t) => t._id === taskId)?.status
+  }
+
+  // Resolve the over.id (which could be a column name or a task id) to a column
+  const findColumnFromOver = (overId) => {
+    if (!board) return null
+    if (board.statuses.includes(overId)) return overId
+    return findColumnOfTask(overId)
+  }
+
+  const handleDragStart = (event) => {
+    const task = board?.tasks.find((t) => t._id === event.active.id)
+    if (task) setDraggingTask(task)
+  }
+
+  const handleDragEnd = (event) => {
+    setDraggingTask(null)
+    const { active, over } = event
+    if (!over || !board) return
+
+    const sourceStatus = findColumnOfTask(active.id)
+    const targetStatus = findColumnFromOver(over.id)
+    if (!sourceStatus || !targetStatus) return
+
+    // Case 1: cross-column drag — change status
+    if (sourceStatus !== targetStatus) {
+      updateTask(active.id, { status: targetStatus })
+      return
+    }
+
+    // Case 2: same column — reorder
+    // Get the current sorted list of task IDs in this column
+    const sortedIds = board.tasks
+      .filter((t) => t.status === sourceStatus)
+      .sort((a, b) => a.order - b.order)
+      .map((t) => t._id)
+
+    const oldIndex = sortedIds.indexOf(active.id)
+    const newIndex = sortedIds.indexOf(over.id)
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+
+    const newSortedIds = arrayMove(sortedIds, oldIndex, newIndex)
+    reorderTasksInColumn(sourceStatus, newSortedIds)
+  }
+
+  const handleAddTask = async () => {
+    if (!board || !board.statuses?.length) return
+    if (hasStarted.current) return
+    hasStarted.current = true
+    setIsAddingTask(true)
+    try {
+      const realTask = await addTask(board.statuses[0])
+      onTaskClick(realTask)
+    } catch {
+      // The store already rolled back and set `error`; the existing error UI displays it.
+    } finally {
+      hasStarted.current = false
+      setIsAddingTask(false)
+    }
+  }
+
+  if (!board) return null
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <main className="flex-1 p-6 overflow-x-auto">
+        <div className="flex gap-4 h-full">
+          {board.statuses.map((status, index) => {
+            const columnTasks = visibleTasks
+              .filter((t) => t.status === status)
+              .sort((a, b) => a.order - b.order)
+            return (
+              <SortableContext
+                key={status}
+                items={columnTasks.map((t) => t._id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <Column
+                  status={status}
+                  tasks={columnTasks}
+                  onTaskClick={onTaskClick}
+                  onAddTask={index === 0 ? handleAddTask : undefined}
+                  isAddingTask={isAddingTask}
+                />
+              </SortableContext>
+            )
+          })}
+        </div>
+      </main>
+
+      <DragOverlay>
+        {draggingTask ? <TaskCard task={draggingTask} /> : null}
+      </DragOverlay>
+    </DndContext>
+  )
+}
+
+export default KanbanBoard
