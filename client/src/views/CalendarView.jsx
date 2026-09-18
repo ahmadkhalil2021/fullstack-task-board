@@ -15,6 +15,7 @@ import {
 } from '@dnd-kit/core'
 import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import { toDateKey } from '../lib/dueDate.js'
+import { resolveDropDate } from '../lib/calendarDnd.js'
 import { PRIORITY_RANK, priorityColor, priorityLabel } from '../lib/priority.js'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -105,6 +106,7 @@ const TaskChip = ({ task, onOpen, onMove }) => {
         setPreviewKey(null)
       } else if (event.key === 'Escape') {
         event.preventDefault()
+        event.stopPropagation()
         setPreviewKey(null)
       }
       return
@@ -151,7 +153,22 @@ const TaskChip = ({ task, onOpen, onMove }) => {
 }
 
 const DayCell = ({ cell, tasks, isToday, isSelected, onSelect, onOpen, onMove, registerRef }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: `day:${cell.key}` })
+  const { setNodeRef, isOver } = useDroppable({ id: `day:${cell.key}`, disabled: !cell.inMonth })
+
+  // Adjacent-month cells are decorative: no drop target, no panel, no chips.
+  if (!cell.inMonth) {
+    return (
+      <div
+        aria-hidden="true"
+        className="flex min-h-[104px] rounded border border-transparent bg-surface-muted/40 p-1"
+      >
+        <span className="flex h-6 min-w-6 items-center justify-center px-1 text-xs text-surface-text-subtle">
+          {cell.day}
+        </span>
+      </div>
+    )
+  }
+
   const visible = tasks.slice(0, MAX_CHIPS)
   const hiddenCount = tasks.length - visible.length
 
@@ -286,6 +303,19 @@ const CalendarView = ({ onTaskClick }) => {
     if (selectedDay && closeButtonRef.current) closeButtonRef.current.focus()
   }, [selectedDay])
 
+  // Escape closes the day panel and returns focus to its day button.
+  useEffect(() => {
+    if (!selectedDay) return
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      const node = cellRefs.current.get(selectedDay)
+      setSelectedDay(null)
+      node?.focus()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedDay])
+
   if (!board) return null
 
   const today = todayKey()
@@ -326,14 +356,8 @@ const CalendarView = ({ onTaskClick }) => {
     if (!task) return
 
     const overId = String(over.id)
-    if (overId === 'tray') {
-      if (toDateKey(task.dueDate)) moveTask(task, null)
-      return
-    }
-    if (overId.startsWith('day:')) {
-      const targetKey = overId.slice('day:'.length)
-      if (toDateKey(task.dueDate) !== targetKey) moveTask(task, targetKey)
-    }
+    const nextDueDate = resolveDropDate(task.dueDate, overId)
+    if (nextDueDate !== undefined) moveTask(task, nextDueDate)
   }
 
   const registerCellRef = (key, node) => {

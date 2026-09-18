@@ -88,4 +88,39 @@ describe('useBoardStore — dueDate and priority', () => {
     )
     expect(created.priority).toBe('none')
   })
+
+  it('ignores out-of-order responses so the newest update wins', async () => {
+    let resolveFirst
+    let resolveSecond
+    api.updateTask
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve }))
+
+    const first = useBoardStore.getState().updateTask('t1', { dueDate: '2026-10-01' })
+    const second = useBoardStore.getState().updateTask('t1', { dueDate: '2026-10-05' })
+    expect(useBoardStore.getState().board.tasks[0].dueDate).toBe('2026-10-05')
+
+    resolveSecond({ ...baseTask, dueDate: '2026-10-05' })
+    await second
+    resolveFirst({ ...baseTask, dueDate: '2026-10-01' })
+    await first
+
+    expect(useBoardStore.getState().board.tasks[0].dueDate).toBe('2026-10-05')
+  })
+
+  it('does not roll back newer state when a stale update fails', async () => {
+    let rejectFirst
+    api.updateTask
+      .mockImplementationOnce(() => new Promise((resolve, reject) => { rejectFirst = reject }))
+      .mockImplementationOnce(() => Promise.resolve({ ...baseTask, dueDate: '2026-10-05' }))
+
+    const first = useBoardStore.getState().updateTask('t1', { dueDate: '2026-10-01' })
+    const second = useBoardStore.getState().updateTask('t1', { dueDate: '2026-10-05' })
+    await second
+    rejectFirst(new Error('stale failure'))
+    await first
+
+    expect(useBoardStore.getState().board.tasks[0].dueDate).toBe('2026-10-05')
+    expect(useBoardStore.getState().error).toBeNull()
+  })
 })

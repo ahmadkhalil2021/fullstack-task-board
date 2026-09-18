@@ -6,6 +6,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import * as api from '../lib/api.js'
 import CalendarView from '../views/CalendarView.jsx'
 import BoardPage from '../pages/BoardPage.jsx'
+import { resolveDropDate } from '../lib/calendarDnd.js'
 import { useBoardStore } from '../store/useBoardStore.js'
 
 vi.mock('../lib/api.js', () => ({
@@ -287,6 +288,54 @@ describe('CalendarView — month navigation', () => {
     expect(screen.getByText('Next month task')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Previous month' }))
     expect(screen.queryByText('Next month task')).not.toBeInTheDocument()
+  })
+})
+
+describe('CalendarView — drop resolution and robustness', () => {
+  it('resolves drop targets for days, the tray and no-ops', () => {
+    const due = '2026-09-15T00:00:00.000Z'
+    expect(resolveDropDate(due, 'day:2026-09-20')).toBe('2026-09-20')
+    expect(resolveDropDate(due, 'day:2026-09-15')).toBeUndefined()
+    expect(resolveDropDate(due, 'tray')).toBeNull()
+    expect(resolveDropDate(null, 'tray')).toBeUndefined()
+    expect(resolveDropDate(due, 'bogus')).toBeUndefined()
+    expect(resolveDropDate(due, undefined)).toBeUndefined()
+  })
+
+  it('renders adjacent-month days as decoration only', () => {
+    renderCalendar()
+    const dayButtons = screen
+      .getAllByRole('button')
+      .filter((button) =>
+        /^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d+, \d+ tasks?$/.test(button.getAttribute('aria-label') ?? '')
+      )
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+    expect(dayButtons).toHaveLength(daysInMonth)
+  })
+
+  it('closes the day panel with Escape and returns focus', () => {
+    renderCalendar()
+    const button = dayButton(thisMonthKey(15), 2)
+    fireEvent.click(button)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
+    expect(button).toHaveFocus()
+  })
+
+  it('rolls the chip back when a keyboard move fails', async () => {
+    api.updateTask.mockRejectedValue(new Error('Move failed'))
+    renderCalendar()
+
+    const chip = screen.getByText('Design review').closest('button')
+    fireEvent.keyDown(chip, { key: 'm' })
+    fireEvent.keyDown(chip, { key: 'ArrowRight' })
+    fireEvent.keyDown(chip, { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(useBoardStore.getState().error).toBe('Move failed')
+    })
+    expect(dayButton(thisMonthKey(15), 2)).toBeInTheDocument()
+    expect(dayButton(thisMonthKey(16), 1)).toBeInTheDocument()
   })
 })
 
