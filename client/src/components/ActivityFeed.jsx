@@ -4,20 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { useBoardStore } from '../store/useBoardStore.js'
-
-const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
-
-// Manual relative-time formatter — avoids a dependency for one use case.
-const formatRelativeTime = (iso, now) => {
-  const seconds = Math.round((new Date(iso).getTime() - now) / 1000)
-  const abs = Math.abs(seconds)
-  if (abs < 60) return rtf.format(seconds, 'second')
-  if (abs < 3600) return rtf.format(Math.round(seconds / 60), 'minute')
-  if (abs < 86400) return rtf.format(Math.round(seconds / 3600), 'hour')
-  if (abs < 2592000) return rtf.format(Math.round(seconds / 86400), 'day')
-  if (abs < 31536000) return rtf.format(Math.round(seconds / 2592000), 'month')
-  return rtf.format(Math.round(seconds / 31536000), 'year')
-}
+import { formatRelativeTime } from '../lib/formatRelativeTime.js'
 
 const ICONS = {
   task_created: '➕',

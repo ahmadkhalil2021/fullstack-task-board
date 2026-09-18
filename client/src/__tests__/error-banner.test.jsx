@@ -7,6 +7,8 @@ import { useBoardStore } from '../store/useBoardStore.js'
 
 vi.mock('react-router-dom', () => ({
   useParams: () => ({ boardId: 'board-1' }),
+  useLocation: () => ({ pathname: '/board/board-1', search: '' }),
+  useNavigate: () => vi.fn(),
   useSearchParams: () => [new URLSearchParams(), vi.fn()],
 }))
 
