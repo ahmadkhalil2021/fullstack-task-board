@@ -228,3 +228,13 @@ Die UI ruft keinen dieser Endpunkte direkt auf. `BoardPage` ruft über den Store
 2. Soll die Table-Standardsortierung `Created desc` sein (Empfehlung, konsistent mit Grid/Neueste-zuerst), oder bevorzugt Product zum Scannen `Name asc`?
 3. Soll `Add your first task` nur bei einem ungefiltert leeren Board erscheinen und bei gefilterter Leere der bestehende gemeinsame `No tasks match`-Banner gelten (Empfehlung)?
 4. Soll Grid das bestehende `TaskCard`-Tastatur-/dnd-kit-Verhalten exakt beibehalten, oder soll Grid in einem späteren Follow-up einen nicht-sortierbaren Präsentations-Wrapper verwenden?
+
+---
+
+## Addendum — 2026-09-18 (List-Ansicht entfernt, Icon-Only-Switcher)
+
+Produkt-Follow-up nach Review:
+
+- Die in diesem Plan referenzierte List-Ansicht wurde entfernt: Die sortierbare Table-Ansicht ersetzt sie. `/board/:boardId/list` fällt auf `NotFoundPage`, `client/src/views/ListView.jsx` und `client/src/__tests__/list-view.test.jsx` sind gelöscht, und `useView` liefert nur noch `kanban | grid | table`.
+- Der View-Switcher rendert Icon-Only-Links (Inline-SVG) mit `aria-label` als zugänglichem Namen statt sichtbarer Text-Labels.
+

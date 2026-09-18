@@ -49,6 +49,15 @@ describe('ViewSwitcher', () => {
     expect(screen.getByRole('link', { name: 'Table' })).toHaveAttribute('href', '/board/b1/table?q=docs&f=completed')
   })
 
+  it('renders icon-only links with accessible names', () => {
+    renderAt('/board/b1')
+    for (const name of ['Kanban', 'Grid', 'Table']) {
+      const link = screen.getByRole('link', { name })
+      expect(link.textContent).toBe('')
+      expect(link.querySelector('svg')).toBeInTheDocument()
+    }
+  })
+
   it('exposes the switcher as a labelled navigation', () => {
     renderAt('/board/b1')
     expect(screen.getByRole('navigation', { name: 'Board view' })).toBeInTheDocument()

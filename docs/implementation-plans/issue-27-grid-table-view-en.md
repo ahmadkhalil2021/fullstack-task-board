@@ -228,3 +228,13 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 2. Should the Table default sort be `Created desc` (recommended for consistency with Grid/newest-first), or should Product prefer `Name asc` for scanning?
 3. Is `Add your first task` required only for an unfiltered empty board, with the existing shared `No tasks match` banner for filtered emptiness (recommended)?
 4. Should Grid keep `TaskCard`'s existing keyboard/dnd-kit behavior exactly as-is, or should Grid use a non-sortable presentation wrapper in a future follow-up?
+
+---
+
+## Addendum — 2026-09-18 (List view removed, icon-only switcher)
+
+Product follow-up after review:
+
+- The List view referenced throughout this plan was removed: the sortable Table view supersedes it. `/board/:boardId/list` falls through to `NotFoundPage`, `client/src/views/ListView.jsx` and `client/src/__tests__/list-view.test.jsx` are deleted, and `useView` returns only `kanban | grid | table`.
+- The view switcher renders icon-only links (inline SVG) with `aria-label` accessible names instead of visible text labels.
+
