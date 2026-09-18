@@ -1,6 +1,6 @@
-// __tests__/table-view.test.jsx — Sortable table: headers, aria-sort, persistence, filter.
+// __tests__/table-view.test.jsx — Sortable table: headers, aria-sort, persistence, filter, add.
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import * as api from '../lib/api.js'
@@ -67,14 +67,18 @@ const renderTable = (onTaskClick = vi.fn(), board = baseBoard) => {
 }
 
 const rowNames = () =>
-  screen.getAllByText(/^(Alpha|Beta|Gamma)$/).map((node) => node.textContent)
+  screen
+    .getAllByRole('row')
+    .slice(1)
+    .map((row) => row.querySelector('td > span > span:last-child')?.textContent)
 
-const renderBoardPage = (entry = '/board/b1/table') => {
-  resetStore()
+const renderBoardPage = (entry = '/board/b1/table', board = baseBoard) => {
+  resetStore(board)
   const router = createMemoryRouter(
     [
       { path: '/board/:boardId', element: <BoardPage /> },
       { path: '/board/:boardId/table', element: <BoardPage /> },
+      { path: '/board/:boardId/task/:taskId', element: <div>TASK PAGE</div> },
     ],
     { initialEntries: [entry] }
   )
@@ -85,6 +89,10 @@ beforeEach(() => {
   vi.clearAllMocks()
   sessionStorage.clear()
   api.fetchActivity.mockResolvedValue({ activities: [], hasMore: false })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('TableView — rendering', () => {
@@ -104,9 +112,16 @@ describe('TableView — rendering', () => {
     expect(screen.getAllByText(/hour(s)? ago$/)).toHaveLength(6)
   })
 
-  it('shows an empty message for a board without tasks', () => {
+  it('shows the centered CTA for an empty board', () => {
     renderTable(vi.fn(), { ...baseBoard, tasks: [] })
     expect(screen.getByText('No tasks yet')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add your first task' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '+ Add new task' })).not.toBeInTheDocument()
+  })
+
+  it('offers the add button when the board has tasks', () => {
+    renderTable()
+    expect(screen.getByRole('button', { name: '+ Add new task' })).toBeInTheDocument()
   })
 })
 
@@ -137,6 +152,20 @@ describe('TableView — sorting', () => {
     expect(screen.getByRole('columnheader', { name: /Status/ })).toHaveAttribute('aria-sort', 'none')
   })
 
+  it('breaks ties deterministically by id for equal and invalid dates', () => {
+    const equal = new Date('2026-01-01T00:00:00.000Z').toISOString()
+    renderTable(vi.fn(), {
+      ...baseBoard,
+      tasks: [
+        makeTask({ _id: 'c', name: 'Charlie', createdAt: equal }),
+        makeTask({ _id: 'a', name: 'Alpha', createdAt: equal }),
+        makeTask({ _id: 'b', name: 'Bravo', createdAt: equal }),
+        makeTask({ _id: 'd', name: 'Delta', createdAt: 'not-a-date' }),
+      ],
+    })
+    expect(rowNames()).toEqual(['Alpha', 'Bravo', 'Charlie', 'Delta'])
+  })
+
   it('persists the sort per board in sessionStorage and restores it', () => {
     const first = renderTable()
     fireEvent.click(screen.getByRole('button', { name: 'Status' }))
@@ -150,6 +179,20 @@ describe('TableView — sorting', () => {
     expect(screen.getByRole('columnheader', { name: /Created/ })).toHaveAttribute('aria-sort', 'none')
   })
 
+  it('keeps sort state isolated per board', () => {
+    const first = renderTable()
+    fireEvent.click(screen.getByRole('button', { name: 'Name' }))
+    expect(sessionStorage.getItem('board-view-table:b1')).toContain('"key":"name"')
+    first.unmount()
+
+    renderTable(vi.fn(), { ...baseBoard, _id: 'b2', name: 'Other Board' })
+    expect(screen.getByRole('columnheader', { name: /Name/ })).toHaveAttribute('aria-sort', 'none')
+    expect(screen.getByRole('columnheader', { name: /Created/ })).toHaveAttribute(
+      'aria-sort',
+      'descending'
+    )
+  })
+
   it('falls back to the default sort for invalid stored values', () => {
     sessionStorage.setItem('board-view-table:b1', JSON.stringify({ key: 'bogus', dir: 'up' }))
     renderTable()
@@ -158,9 +201,24 @@ describe('TableView — sorting', () => {
       'descending'
     )
   })
+
+  it('still sorts when sessionStorage access throws', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('storage denied')
+    })
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage denied')
+    })
+
+    renderTable()
+    expect(rowNames()).toEqual(['Gamma', 'Beta', 'Alpha'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Name' }))
+    expect(rowNames()).toEqual(['Alpha', 'Beta', 'Gamma'])
+  })
 })
 
-describe('TableView — filter and navigation', () => {
+describe('TableView — filter, add and navigation', () => {
   it('narrows rows through the shared store filter', () => {
     renderTable()
     act(() => {
@@ -179,6 +237,18 @@ describe('TableView — filter and navigation', () => {
     const { onTaskClick } = renderTable()
     fireEvent.keyDown(screen.getByText('Beta').closest('tr'), { key: 'Enter' })
     expect(onTaskClick).toHaveBeenCalledWith(expect.objectContaining({ _id: 't2' }))
+  })
+
+  it('creates in the first status and opens the detail page', async () => {
+    api.createTask.mockResolvedValue(makeTask({ _id: 'new-1', name: 'New Task' }))
+    renderBoardPage()
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Add new task' }))
+
+    expect(await screen.findByText('TASK PAGE')).toBeInTheDocument()
+    expect(api.createTask).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'In Progress', parentBoardId: 'b1' })
+    )
   })
 
   it('renders as the active view on the table route', () => {

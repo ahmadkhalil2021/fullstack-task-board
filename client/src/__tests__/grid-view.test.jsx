@@ -103,6 +103,29 @@ describe('GridView', () => {
     expect(names).toEqual(['Gamma', 'Beta', 'Alpha', 'NoDate'])
   })
 
+  it('puts tasks with an invalid createdAt last', () => {
+    renderGrid(vi.fn(), {
+      ...baseBoard,
+      tasks: [...baseBoard.tasks, makeTask({ _id: 't4', name: 'BadDate', createdAt: 'not-a-date' })],
+    })
+    const names = screen.getAllByText(/^(Alpha|Beta|Gamma|BadDate)$/).map((node) => node.textContent)
+    expect(names).toEqual(['Gamma', 'Beta', 'Alpha', 'BadDate'])
+  })
+
+  it('breaks ties deterministically by id for equal dates', () => {
+    const equal = new Date('2026-01-01T00:00:00.000Z').toISOString()
+    renderGrid(vi.fn(), {
+      ...baseBoard,
+      tasks: [
+        makeTask({ _id: 'c', name: 'Charlie', createdAt: equal }),
+        makeTask({ _id: 'a', name: 'Alpha', createdAt: equal }),
+        makeTask({ _id: 'b', name: 'Bravo', createdAt: equal }),
+      ],
+    })
+    const names = screen.getAllByText(/^(Alpha|Bravo|Charlie)$/).map((node) => node.textContent)
+    expect(names).toEqual(['Alpha', 'Bravo', 'Charlie'])
+  })
+
   it('shows a status badge per card', () => {
     renderGrid()
     expect(screen.getAllByText('In Progress')).toHaveLength(2)
