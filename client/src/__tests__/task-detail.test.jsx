@@ -89,6 +89,15 @@ describe('TaskDetailPage', () => {
     expect(screen.getByText(/^Last updated /)).toBeInTheDocument()
   })
 
+  it('renders icon-only Save and Discard controls with accessible names', () => {
+    renderDetail()
+    for (const name of ['Save', 'Discard']) {
+      const button = screen.getByRole('button', { name })
+      expect(button.textContent).toBe('')
+      expect(button.querySelector('svg')).toBeInTheDocument()
+    }
+  })
+
   it('lists the board statuses in the statusbar', () => {
     renderDetail()
     const stages = screen

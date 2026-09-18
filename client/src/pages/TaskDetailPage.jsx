@@ -137,17 +137,40 @@ const TaskDetailForm = ({ task, backTo }) => {
               type="button"
               onClick={handleDiscard}
               disabled={!hasChanges || isSaving}
-              className="rounded px-3 py-1.5 text-sm text-surface-text-muted hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+              aria-label="Discard"
+              title="Discard"
+              className="inline-flex items-center justify-center rounded p-2 text-surface-text-muted hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
-              Discard
+              <svg
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M3 6h6.5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5.5 3 2.5 6l3 3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
             <button
               type="button"
               onClick={handleSave}
               disabled={!hasChanges || isSaving || !name.trim()}
-              className="rounded bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+              aria-label={isSaving ? 'Saving...' : 'Save'}
+              title="Save"
+              className="inline-flex items-center justify-center rounded bg-primary p-2 text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
-              {isSaving ? 'Saving...' : 'Save'}
+              <svg
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M3 8.5 6.5 12 13 4.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </div>
         </div>
