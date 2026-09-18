@@ -19,6 +19,18 @@ export const toDateInputValue = (iso) => {
   return `${year}-${month}-${day}`
 }
 
+// `YYYY-MM-DD` key from UTC parts, or null for empty/invalid values.
+// Used for grouping and comparisons so a date never shifts a day.
+export const toDateKey = (iso) => {
+  if (!iso) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  const year = String(date.getUTCFullYear()).padStart(4, '0')
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // `Aug 30` for a valid date, null for empty/invalid values.
 export const formatDueDate = (iso) => {
   if (!iso) return null

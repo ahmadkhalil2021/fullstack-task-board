@@ -22,6 +22,7 @@ describe('useView', () => {
     ['/board/b1', 'kanban'],
     ['/board/b1/grid', 'grid'],
     ['/board/b1/table', 'table'],
+    ['/board/b1/calendar', 'calendar'],
   ])('maps %s to %s', (path, expected) => {
     renderAt(path)
     expect(screen.getByTestId('view')).toHaveTextContent(expected)

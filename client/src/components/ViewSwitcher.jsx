@@ -8,6 +8,7 @@ const VIEWS = [
   { key: 'kanban', label: 'Kanban', path: '' },
   { key: 'grid', label: 'Grid', path: '/grid' },
   { key: 'table', label: 'Table', path: '/table' },
+  { key: 'calendar', label: 'Calendar', path: '/calendar' },
 ]
 
 const KanbanIcon = () => (
@@ -41,10 +42,25 @@ const TableIcon = () => (
   </svg>
 )
 
+const CalendarIcon = () => (
+  <svg
+    viewBox="0 0 16 16"
+    aria-hidden="true"
+    className="h-4 w-4"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+  >
+    <rect x="1" y="3" width="14" height="12" rx="1" />
+    <path d="M1 7h14M5 1v4M11 1v4" strokeLinecap="round" />
+  </svg>
+)
+
 const ICONS = {
   kanban: KanbanIcon,
   grid: GridIcon,
   table: TableIcon,
+  calendar: CalendarIcon,
 }
 
 const ViewSwitcher = () => {

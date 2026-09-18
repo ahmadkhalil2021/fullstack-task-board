@@ -1,13 +1,20 @@
 // __tests__/due-date.test.js — UTC-safe date helpers for task due dates.
 
 import { describe, it, expect } from 'vitest'
-import { toDateInputValue, formatDueDate, isOverdue } from '../lib/dueDate.js'
+import { toDateInputValue, formatDueDate, isOverdue, toDateKey } from '../lib/dueDate.js'
 
 describe('dueDate helpers', () => {
   it('converts stored ISO dates to date-input values without a day shift', () => {
     expect(toDateInputValue('2026-08-30T00:00:00.000Z')).toBe('2026-08-30')
     expect(toDateInputValue(null)).toBe('')
     expect(toDateInputValue('nope')).toBe('')
+  })
+
+  it('builds UTC date keys for grouping', () => {
+    expect(toDateKey('2026-09-03T00:00:00.000Z')).toBe('2026-09-03')
+    expect(toDateKey('2026-01-01T23:59:59.000Z')).toBe('2026-01-01')
+    expect(toDateKey(null)).toBeNull()
+    expect(toDateKey('nope')).toBeNull()
   })
 
   it('formats valid dates and ignores invalid ones', () => {
