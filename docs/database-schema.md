@@ -69,6 +69,20 @@ const taskSchema = new mongoose.Schema({
   status: {
     type: String,
     default: 'In progress'
+  },
+  order: {
+    type: Number,
+    default: 0
+  },
+  dueDate: {
+    type: Date,
+    default: null,
+    index: true
+  },
+  priority: {
+    type: String,
+    enum: ['none', 'low', 'medium', 'high'],
+    default: 'none'
   }
 }, {
   timestamps: true
@@ -77,9 +91,12 @@ const taskSchema = new mongoose.Schema({
 
 ### Validations
 - `status` is a free string. **Validation against the parent board's `statuses` array happens in the API layer**, not in the schema. This is because Mongoose can't easily reference values from a related document during validation.
+- `dueDate` is optional; `null` means no due date. The API accepts `YYYY-MM-DD` or ISO-8601 date-times.
+- `priority` is optional and limited to the four enum values.
 
 ### Indexes
 - `_id` — automatic, used for PUT/DELETE `/api/tasks/:taskId`
+- `dueDate` — indexed for calendar/due-date sorting (`server/models/Task.js`)
 
 ## Default Tasks (Created with Board)
 

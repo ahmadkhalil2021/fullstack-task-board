@@ -186,10 +186,12 @@ Create a new task in a board column (used by the "Add new task" button).
   "icon": "⏰",
   "status": "Backlog",
   "order": -1,
+  "dueDate": "2026-08-30",
+  "priority": "high",
   "parentBoardId": "64b2f1a..."
 }
 ```
-`parentBoardId` and `status` are required. `name`, `description`, `icon`, and `order` are optional (defaults applied if missing). `status` must be one of the board's `statuses`; `order` must be a number.
+`parentBoardId` and `status` are required. `name`, `description`, `icon`, `order`, `dueDate`, and `priority` are optional (defaults applied if missing). `status` must be one of the board's `statuses`; `order` must be a number. `dueDate` accepts `YYYY-MM-DD` or an ISO-8601 date-time, or `null`; `priority` must be one of `none`, `low`, `medium`, `high`.
 
 **Response 201**
 ```json
@@ -202,6 +204,8 @@ Create a new task in a board column (used by the "Add new task" button).
       "icon": "⏰",
       "status": "Backlog",
       "order": -1,
+      "dueDate": "2026-08-30T00:00:00.000Z",
+      "priority": "high",
       "createdAt": "2026-08-04T...",
       "updatedAt": "2026-08-04T..."
     }
@@ -218,6 +222,7 @@ Create a new task in a board column (used by the "Add new task" button).
   }
 }
 ```
+Invalid date/priority values use the messages `dueDate must be a valid ISO date or null` and `priority must be one of: none, low, medium, high`.
 
 Reference: `server/routes/tasks.js`.
 
@@ -232,10 +237,12 @@ Update a task's fields.
   "name": "Updated task name",
   "description": "Updated description",
   "icon": "🚀",
-  "status": "Completed"
+  "status": "Completed",
+  "dueDate": "2026-09-15",
+  "priority": "medium"
 }
 ```
-All fields optional. Only provided fields are updated.
+All fields optional. Only provided fields are updated; `dueDate: null` clears the date, while omitting it leaves the current value untouched.
 
 **Response 200**
 ```json
@@ -247,6 +254,8 @@ All fields optional. Only provided fields are updated.
       "description": "Updated description",
       "icon": "🚀",
       "status": "Completed",
+      "dueDate": "2026-09-15T00:00:00.000Z",
+      "priority": "medium",
       "createdAt": "2026-08-04T...",
       "updatedAt": "2026-08-04T..."
     }
@@ -254,7 +263,7 @@ All fields optional. Only provided fields are updated.
 }
 ```
 
-**Valid `status` values**: any string in the parent board's `statuses` array. The API loads the board, looks up the task, and validates the new `status` against `board.statuses`. If the status is not in the list, returns `400 VALIDATION_ERROR`.
+**Valid `status` values**: any string in the parent board's `statuses` array. The API loads the board, looks up the task, and validates the new `status` against `board.statuses`. If the status is not in the list, returns `400 VALIDATION_ERROR`. Invalid `dueDate`/`priority` values return `dueDate must be a valid ISO date or null` / `priority must be one of: none, low, medium, high`.
 
 ---
 

@@ -40,7 +40,7 @@ const isValidDueDate = (value) => {
 // `undefined` means "not provided" and must stay untouched.
 const validateTaskFields = ({ dueDate, priority }) => {
   if (dueDate !== undefined && dueDate !== null && !isValidDueDate(dueDate)) {
-    throw validationError('dueDate must be a valid ISO date (YYYY-MM-DD) or null')
+    throw validationError('dueDate must be a valid ISO date or null')
   }
   if (priority !== undefined && !PRIORITIES.includes(priority)) {
     throw validationError('priority must be one of: none, low, medium, high')
