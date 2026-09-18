@@ -3,7 +3,7 @@
 // - Another column → change status
 // - Same column → reorder (with @dnd-kit/sortable)
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   DndContext,
@@ -15,8 +15,9 @@ import {
   DragOverlay,
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useBoardStore } from '../store/useBoardStore.js'
+import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import BoardHeader from '../components/BoardHeader.jsx'
+import CommandBar from '../components/CommandBar.jsx'
 import Column from '../components/Column.jsx'
 import TaskForm from '../components/TaskForm.jsx'
 import TaskCard from '../components/TaskCard.jsx'
@@ -31,6 +32,8 @@ const BoardPage = () => {
   const updateTask = useBoardStore(s => s.updateTask)
   const reorderTasksInColumn = useBoardStore(s => s.reorderTasksInColumn)
   const addTask = useBoardStore(s => s.addTask)
+  const query = useBoardStore(s => s.query)
+  const filterStatus = useBoardStore(s => s.filterStatus)
 
   const [editingTask, setEditingTask] = useState(null)
   const [draggingTask, setDraggingTask] = useState(null)
@@ -49,6 +52,13 @@ const BoardPage = () => {
       fetchBoard(boardId)
     }
   }, [boardId, board?._id, fetchBoard])
+
+  // Derived (memoized) so columns render only the filtered set while drag
+  // handlers keep resolving against the full `board.tasks` list.
+  const visibleTasks = useMemo(
+    () => filterTasks(board?.tasks, query, filterStatus),
+    [board?.tasks, query, filterStatus]
+  )
 
   // Find the column a task belongs to
   const findColumnOfTask = (taskId) => {
@@ -160,6 +170,7 @@ const BoardPage = () => {
       ) : (
         <>
           <BoardHeader />
+          <CommandBar key={board._id} />
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -172,7 +183,7 @@ const BoardPage = () => {
               ) : (
                 <div className="flex gap-4 h-full">
                   {board.statuses.map((status, index) => {
-                    const columnTasks = board.tasks
+                    const columnTasks = visibleTasks
                       .filter((t) => t.status === status)
                       .sort((a, b) => a.order - b.order)
                     return (

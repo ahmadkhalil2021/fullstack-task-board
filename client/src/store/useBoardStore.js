@@ -23,6 +23,19 @@ const VALID_THEMES = ['light', 'dark', 'system']
 // Fall back to 'system' on stale/corrupt values left in localStorage by older builds
 const sanitizeTheme = (t) => (VALID_THEMES.includes(t) ? t : 'system')
 
+// Pure filter used by the search slice. Kept outside the store so components
+// can memoize the derived list (Zustand v5 selectors must return stable refs).
+export const filterTasks = (tasks, query, filterStatus) => {
+  const needle = typeof query === 'string' ? query.trim().toLowerCase() : ''
+  return (tasks ?? []).filter((task) => {
+    if (filterStatus && task.status !== filterStatus) return false
+    if (!needle) return true
+    const name = (task.name ?? '').toLowerCase()
+    const description = (task.description ?? '').toLowerCase()
+    return name.includes(needle) || description.includes(needle)
+  })
+}
+
 // Build a client-side activity object for optimistic appends. The server also
 // emits the real event on the same mutation; this local copy just makes the
 // feed feel instant before the next fetch.
@@ -41,6 +54,8 @@ export const useBoardStore = create((set, get) => ({
   activityLoading: false,
   activityError: null,
   activityHasMore: true,
+  query: '',
+  filterStatus: null,
   theme: sanitizeTheme(
     typeof window !== 'undefined' ? localStorage.getItem('theme') : null
   ),
@@ -59,6 +74,19 @@ export const useBoardStore = create((set, get) => ({
 
   // Clear the global error banner.
   clearError: () => set({ error: null }),
+
+  // Search slice — URL-synced by CommandBar, consumed by every board view.
+  setSearchQuery: (query) =>
+    set({ query: typeof query === 'string' ? query.trim() : '' }),
+  setFilterStatus: (status) => set({ filterStatus: status ?? null }),
+  clearSearch: () => set({ query: '', filterStatus: null }),
+
+  // Derived read for non-React consumers; components memoize `filterTasks`
+  // themselves so selectors keep stable snapshots (Zustand v5).
+  getFilteredTasks: () => {
+    const { board, query, filterStatus } = get()
+    return filterTasks(board?.tasks ?? [], query, filterStatus)
+  },
 
   // Fetch the activity feed for a board. Replaces the list on the first page;
   // appends older pages when a `before` cursor is supplied.
