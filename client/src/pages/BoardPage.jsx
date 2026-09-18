@@ -11,6 +11,8 @@ import ErrorBanner from '../components/ErrorBanner.jsx'
 import ViewSwitcher from '../components/ViewSwitcher.jsx'
 import KanbanBoard from '../views/KanbanBoard.jsx'
 import ListView from '../views/ListView.jsx'
+import GridView from '../views/GridView.jsx'
+import TableView from '../views/TableView.jsx'
 import EmptyBoard from '../components/EmptyBoard.jsx'
 
 const BoardPage = () => {
@@ -104,12 +106,14 @@ const BoardPage = () => {
               <div className="flex justify-end px-4 sm:px-6 pt-4">
                 <ViewSwitcher />
               </div>
-              {view === 'list' ? (
-                <main className="flex-1 p-4 sm:p-6">
-                  <ListView onTaskClick={openTask} />
-                </main>
+              {view === 'kanban' ? (
+                <KanbanBoard key={board._id} onTaskClick={openTask} />
               ) : (
-                <KanbanBoard onTaskClick={openTask} />
+                <main className="flex-1 p-4 sm:p-6">
+                  {view === 'list' && <ListView key={board._id} onTaskClick={openTask} />}
+                  {view === 'grid' && <GridView key={board._id} onTaskClick={openTask} />}
+                  {view === 'table' && <TableView key={board._id} onTaskClick={openTask} />}
+                </main>
               )}
             </>
           )}

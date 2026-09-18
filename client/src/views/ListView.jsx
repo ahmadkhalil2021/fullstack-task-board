@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import { formatRelativeTime } from '../lib/formatRelativeTime.js'
-import { statusColor } from '../lib/statusColor.js'
+import StatusBadge from '../components/StatusBadge.jsx'
 
 const ListView = ({ onTaskClick }) => {
   const board = useBoardStore(s => s.board)
@@ -108,13 +108,7 @@ const ListView = ({ onTaskClick }) => {
                 </button>
               </td>
               <td className="whitespace-nowrap px-4 py-2">
-                <span className="inline-flex items-center gap-2 text-surface-text-muted">
-                  <span
-                    aria-hidden="true"
-                    className={`inline-block h-2 w-2 shrink-0 rounded-full bg-status-${statusColor(task.status)}`}
-                  />
-                  {task.status}
-                </span>
+                <StatusBadge status={task.status} />
               </td>
               <td className="whitespace-nowrap px-4 py-2 text-right text-xs text-surface-text-subtle">
                 Updated {formatRelativeTime(task.updatedAt ?? task.createdAt, now)}

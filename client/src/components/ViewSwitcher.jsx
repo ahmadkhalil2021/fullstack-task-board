@@ -1,4 +1,4 @@
-// ViewSwitcher.jsx — Pill links that switch between Kanban and List.
+// ViewSwitcher.jsx — Pill links that switch between the board views.
 // The URL is the source of truth; ?q=/?f= are preserved across switches.
 
 import { Link, useLocation, useParams } from 'react-router-dom'
@@ -7,6 +7,8 @@ import { useView } from '../lib/useView.js'
 const VIEWS = [
   { key: 'kanban', label: 'Kanban', path: '' },
   { key: 'list', label: 'List', path: '/list' },
+  { key: 'grid', label: 'Grid', path: '/grid' },
+  { key: 'table', label: 'Table', path: '/table' },
 ]
 
 const ViewSwitcher = () => {

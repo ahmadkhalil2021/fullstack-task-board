@@ -11,6 +11,8 @@ const renderAt = (path) =>
       <Routes>
         <Route path="/board/:boardId" element={<ViewSwitcher />} />
         <Route path="/board/:boardId/list" element={<ViewSwitcher />} />
+        <Route path="/board/:boardId/grid" element={<ViewSwitcher />} />
+        <Route path="/board/:boardId/table" element={<ViewSwitcher />} />
       </Routes>
     </MemoryRouter>
   )
@@ -28,16 +30,30 @@ describe('ViewSwitcher', () => {
     expect(screen.getByRole('link', { name: 'Kanban' })).not.toHaveAttribute('aria-current')
   })
 
-  it('links to both exact paths', () => {
+  it('marks Grid active on the grid route', () => {
+    renderAt('/board/b1/grid')
+    expect(screen.getByRole('link', { name: 'Grid' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('marks Table active on the table route', () => {
+    renderAt('/board/b1/table')
+    expect(screen.getByRole('link', { name: 'Table' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('links to all four exact paths', () => {
     renderAt('/board/b1')
     expect(screen.getByRole('link', { name: 'Kanban' })).toHaveAttribute('href', '/board/b1')
     expect(screen.getByRole('link', { name: 'List' })).toHaveAttribute('href', '/board/b1/list')
+    expect(screen.getByRole('link', { name: 'Grid' })).toHaveAttribute('href', '/board/b1/grid')
+    expect(screen.getByRole('link', { name: 'Table' })).toHaveAttribute('href', '/board/b1/table')
   })
 
-  it('preserves the query string in both links', () => {
+  it('preserves the query string in every link', () => {
     renderAt('/board/b1?q=docs&f=completed')
     expect(screen.getByRole('link', { name: 'Kanban' })).toHaveAttribute('href', '/board/b1?q=docs&f=completed')
     expect(screen.getByRole('link', { name: 'List' })).toHaveAttribute('href', '/board/b1/list?q=docs&f=completed')
+    expect(screen.getByRole('link', { name: 'Grid' })).toHaveAttribute('href', '/board/b1/grid?q=docs&f=completed')
+    expect(screen.getByRole('link', { name: 'Table' })).toHaveAttribute('href', '/board/b1/table?q=docs&f=completed')
   })
 
   it('exposes the switcher as a labelled navigation', () => {
