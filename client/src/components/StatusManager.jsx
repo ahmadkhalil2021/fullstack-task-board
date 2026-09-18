@@ -26,6 +26,28 @@ const StatusManager = ({ isOpen, onClose }) => {
     }
   }, [isOpen, board])
 
+  // Global Escape: cancel the active sub-state first, then close.
+  // A window listener is required because focus may sit on <body> when the
+  // modal opens, so keydown never bubbles through the React tree.
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return
+      if (confirmingRemove !== null) {
+        setConfirmingRemove(null)
+        return
+      }
+      if (editingIndex !== null) {
+        setEditingIndex(null)
+        setEditingValue('')
+        return
+      }
+      onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen, confirmingRemove, editingIndex, onClose])
+
   if (!isOpen) return null
 
   const taskCountFor = (status) =>
@@ -127,9 +149,6 @@ const StatusManager = ({ isOpen, onClose }) => {
       aria-labelledby="status-manager-title"
       onClick={() => {
         if (confirmingRemove === null) onClose()
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && confirmingRemove === null) onClose()
       }}
     >
       <div

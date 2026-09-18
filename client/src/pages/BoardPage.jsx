@@ -3,7 +3,7 @@
 // - Another column → change status
 // - Same column → reorder (with @dnd-kit/sortable)
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   DndContext,
@@ -15,7 +15,7 @@ import {
   DragOverlay,
 } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useBoardStore } from '../store/useBoardStore.js'
+import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import BoardHeader from '../components/BoardHeader.jsx'
 import Column from '../components/Column.jsx'
 import TaskForm from '../components/TaskForm.jsx'
@@ -31,6 +31,9 @@ const BoardPage = () => {
   const updateTask = useBoardStore(s => s.updateTask)
   const reorderTasksInColumn = useBoardStore(s => s.reorderTasksInColumn)
   const addTask = useBoardStore(s => s.addTask)
+  const query = useBoardStore(s => s.query)
+  const filterStatus = useBoardStore(s => s.filterStatus)
+  const clearSearch = useBoardStore(s => s.clearSearch)
 
   const [editingTask, setEditingTask] = useState(null)
   const [draggingTask, setDraggingTask] = useState(null)
@@ -49,6 +52,14 @@ const BoardPage = () => {
       fetchBoard(boardId)
     }
   }, [boardId, board?._id, fetchBoard])
+
+  // Derived (memoized) so columns render only the filtered set while drag
+  // handlers keep resolving against the full `board.tasks` list.
+  const visibleTasks = useMemo(
+    () => filterTasks(board?.tasks, query, filterStatus),
+    [board?.tasks, query, filterStatus]
+  )
+  const isFiltering = query !== '' || filterStatus !== null
 
   // Find the column a task belongs to
   const findColumnOfTask = (taskId) => {
@@ -160,6 +171,23 @@ const BoardPage = () => {
       ) : (
         <>
           <BoardHeader />
+          {isFiltering && visibleTasks.length === 0 && (
+            <div className="px-4 sm:px-6 pt-4">
+              <div
+                role="status"
+                className="mx-auto flex max-w-xl items-center justify-between gap-4 rounded-card border border-surface-border bg-surface-raised px-4 py-3 text-sm text-surface-text-muted"
+              >
+                <span>No tasks match</span>
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="rounded px-2 py-1 text-sm text-primary hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+                >
+                  Clear filters
+                </button>
+              </div>
+            </div>
+          )}
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -172,7 +200,7 @@ const BoardPage = () => {
               ) : (
                 <div className="flex gap-4 h-full">
                   {board.statuses.map((status, index) => {
-                    const columnTasks = board.tasks
+                    const columnTasks = visibleTasks
                       .filter((t) => t.status === status)
                       .sort((a, b) => a.order - b.order)
                     return (

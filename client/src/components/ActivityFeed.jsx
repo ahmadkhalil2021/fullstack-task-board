@@ -85,6 +85,16 @@ const ActivityFeed = ({ isOpen, onClose }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board?._id])
 
+  // Escape closes the panel regardless of where focus currently sits.
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen, onClose])
+
   const loadMore = () => {
     if (!board) return
     const oldest = activity[activity.length - 1]
