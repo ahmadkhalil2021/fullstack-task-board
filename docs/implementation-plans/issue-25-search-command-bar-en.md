@@ -185,3 +185,17 @@ Also add store-level tests in `client/src/__tests__/search-store.test.js` for na
 - **Dynamic status collisions:** Two labels can normalize to the same slug. Recommendation: disambiguate generated links and reject ambiguous incoming keys rather than silently selecting one.
 - **Future views:** #26/#27 must consume the same store-derived `filteredTasks` contract; they must not reimplement search in components.
 - **Accessibility tooling:** The acceptance text asks for an axe scan, but no axe dependency exists. Recommendation: manual axe DevTools/extension now; schedule automated axe integration as a separate quality issue if CI enforcement is required.
+
+---
+
+## Addendum — 2026-09-18 (re-scope after UI review)
+
+The search interaction was re-scoped from the modal command bar above to an Odoo-style inline filter bar:
+
+- The input is always visible in the header and opens a dropdown instead of a modal (no backdrop, no focus trap, no auto-open on deep links).
+- Text is applied as a quick-search facet (`Name or description contains "..."`) instead of live 150 ms debounce filtering; `client/src/lib/useDebouncedValue.js` was removed.
+- Status filters are applied from the dropdown and shown as removable facet chips; `Backspace` on an empty input removes the last chip.
+- The no-results banner moved from `CommandBar` to `BoardPage` so the header layout stays intact.
+- The URL contract (`?q=`, `?f=`, alias canonicalization, collision rejection) is unchanged.
+- Status facets remain single-select; multi-select facets are out of scope.
+

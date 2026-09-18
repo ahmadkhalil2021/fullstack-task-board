@@ -185,3 +185,17 @@ Zusätzlich Store-Tests in `client/src/__tests__/search-store.test.js` für Name
 - **Dynamische Status-Kollisionen:** Zwei Labels können denselben Slug normalisieren. Empfehlung: generierte Links unterscheiden und mehrdeutige eingehende Keys ablehnen, statt still einen Status zu wählen.
 - **Zukünftige Ansichten:** #26/#27 müssen denselben Store-abgeleiteten `filteredTasks`-Vertrag verwenden und Suche nicht in Komponenten neu implementieren.
 - **Accessibility-Tooling:** Der Acceptance-Text verlangt einen axe-Scan, aber keine axe-Dependency ist vorhanden. Empfehlung: jetzt manuelle Axe DevTools/Extension; automatisierte axe-Integration als separates Qualitäts-Issue planen, falls CI-Erzwingung erforderlich ist.
+
+---
+
+## Addendum — 2026-09-18 (Re-Scope nach UI-Review)
+
+Die Suchinteraktion wurde vom oben beschriebenen modalen Command-Bar auf eine Odoo-artige Inline-Filterleiste umgestellt:
+
+- Das Eingabefeld ist immer im Header sichtbar und öffnet ein Dropdown statt eines Modals (kein Backdrop, kein Focus-Trap, kein Auto-Open bei Deep-Links).
+- Text wird als Quick-Search-Facet (`Name or description contains "..."`) angewendet statt live mit 150-ms-Debounce zu filtern; `client/src/lib/useDebouncedValue.js` wurde entfernt.
+- Status-Filter werden aus dem Dropdown angewendet und als entfernbare Facet-Chips angezeigt; `Backspace` im leeren Feld entfernt den letzten Chip.
+- Das No-Results-Banner wanderte von `CommandBar` nach `BoardPage`, damit das Header-Layout intakt bleibt.
+- Der URL-Vertrag (`?q=`, `?f=`, Alias-Kanonisierung, Kollisions-Ablehnung) bleibt unverändert.
+- Status-Facets bleiben Einzelauswahl; Mehrfachauswahl ist out of scope.
+
