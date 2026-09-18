@@ -27,12 +27,14 @@ export const formatDueDate = (iso) => {
   return dateFormatter.format(date)
 }
 
-// A due date is overdue once its UTC calendar day is before today's.
+// A due date is overdue once its calendar day is before the user's local day.
+// Date-only values are stored as UTC midnight, so the due calendar day comes
+// from UTC parts while "today" comes from local parts.
 export const isOverdue = (iso, now = new Date()) => {
   if (!iso) return false
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return false
   const due = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
   return due < today
 }

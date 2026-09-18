@@ -42,4 +42,10 @@ describe('TaskCard — due date and priority', () => {
     rerender(<TaskCard task={{ ...baseTask, priority: 'none' }} onClick={() => {}} />)
     expect(screen.queryByText('High')).not.toBeInTheDocument()
   })
+
+  it('ignores unknown legacy priority values safely', () => {
+    renderCard({ priority: 'urgent' })
+    expect(screen.queryByText('Urgent')).not.toBeInTheDocument()
+    expect(document.querySelector('.bg-priority-urgent')).toBeNull()
+  })
 })

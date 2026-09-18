@@ -19,6 +19,6 @@ export const PRIORITY_RANK = {
 
 export const priorityLabel = (priority) => PRIORITY_LABELS[priority] ?? 'None'
 
-// Returns a token suffix for `bg-priority-{...}`, or null for no priority.
+// Returns a token suffix for `bg-priority-{...}`, or null for no/unknown priority.
 export const priorityColor = (priority) =>
-  priority && priority !== 'none' ? priority : null
+  priority !== 'none' && PRIORITY_VALUES.includes(priority) ? priority : null

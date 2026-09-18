@@ -13,13 +13,34 @@ const router = express.Router()
 
 const PRIORITIES = ['none', 'low', 'medium', 'high']
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const ISO_DATE_TIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/
+
+// Strict ISO check: date-only values must round-trip (rejects normalized
+// invalid days like 2026-02-30), and date-times must parse to a finite date.
+const isValidDueDate = (value) => {
+  if (typeof value !== 'string' || !value) return false
+  if (DATE_ONLY_PATTERN.test(value)) {
+    const [year, month, day] = value.split('-').map(Number)
+    const date = new Date(Date.UTC(year, month - 1, day))
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    )
+  }
+  if (ISO_DATE_TIME_PATTERN.test(value)) {
+    return !Number.isNaN(new Date(value).getTime())
+  }
+  return false
+}
+
 // Validate the optional dueDate/priority fields shared by POST and PUT.
 // `undefined` means "not provided" and must stay untouched.
 const validateTaskFields = ({ dueDate, priority }) => {
-  if (dueDate !== undefined && dueDate !== null) {
-    if (typeof dueDate !== 'string' || Number.isNaN(new Date(dueDate).getTime())) {
-      throw validationError('dueDate must be a valid ISO date or null')
-    }
+  if (dueDate !== undefined && dueDate !== null && !isValidDueDate(dueDate)) {
+    throw validationError('dueDate must be a valid ISO date (YYYY-MM-DD) or null')
   }
   if (priority !== undefined && !PRIORITIES.includes(priority)) {
     throw validationError('priority must be one of: none, low, medium, high')

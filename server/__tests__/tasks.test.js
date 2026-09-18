@@ -15,6 +15,7 @@ process.env.MONGODB_URI = ''
 const { default: app } = await import('../index.js')
 const { connectDB } = await import('../db.js')
 const { default: Activity } = await import('../models/Activity.js')
+const { default: Task } = await import('../models/Task.js')
 
 before(async () => {
   mongo = await MongoMemoryServer.create()
@@ -316,6 +317,36 @@ test('PUT /api/tasks/:taskId rejects invalid dueDate and priority', async () => 
   const badPriority = await request(app).put(`/api/tasks/${taskId}`).send({ priority: 'urgent' })
   assert.equal(badPriority.status, 400)
   assert.equal(badPriority.body.error.code, 'VALIDATION_ERROR')
+})
+
+test('PUT /api/tasks/:taskId rejects non-ISO due dates without mutating the task', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const taskId = board.tasks[0]._id
+  await request(app).put(`/api/tasks/${taskId}`).send({ dueDate: '2026-09-15' })
+
+  for (const dueDate of [123, '12/31/2026', '2026-02-30', '']) {
+    const res = await request(app).put(`/api/tasks/${taskId}`).send({ dueDate })
+    assert.equal(res.status, 400, `expected 400 for ${JSON.stringify(dueDate)}`)
+    assert.equal(res.body.error.code, 'VALIDATION_ERROR')
+  }
+
+  const task = await Task.findById(taskId)
+  assert.equal(task.dueDate.toISOString().slice(0, 10), '2026-09-15')
+})
+
+test('PUT /api/tasks/:taskId preserves omitted dueDate/priority fields', async () => {
+  const board = await createBoardWithTasks(['A'])
+  const taskId = board.tasks[0]._id
+  await request(app)
+    .put(`/api/tasks/${taskId}`)
+    .send({ dueDate: '2026-09-15', priority: 'high' })
+
+  const res = await request(app).put(`/api/tasks/${taskId}`).send({ name: 'Renamed only' })
+
+  assert.equal(res.status, 200)
+  assert.equal(res.body.data.task.name, 'Renamed only')
+  assert.equal(res.body.data.task.dueDate.slice(0, 10), '2026-09-15')
+  assert.equal(res.body.data.task.priority, 'high')
 })
 
 test('PUT /api/tasks/:taskId records dueDate/priority changes as activity', async () => {
