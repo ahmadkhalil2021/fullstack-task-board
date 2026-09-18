@@ -1,6 +1,6 @@
 // __tests__/activity-feed.test.jsx — Tests for the activity store slice and sidebar
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as api from '../lib/api.js'
 import ActivityFeed from '../components/ActivityFeed.jsx'
@@ -131,6 +131,34 @@ describe('ActivityFeed', () => {
 
     expect(screen.getByText('Moved "Fix login bug" from In progress to In review')).toBeInTheDocument()
     expect(screen.getByText('Task deleted: Old task')).toBeInTheDocument()
+  })
+
+  it('closes on Escape when open', () => {
+    api.fetchActivity.mockResolvedValue({ activities: [], hasMore: false })
+    useBoardStore.setState({
+      board: { _id: 'b1', name: 'Board', statuses: [], tasks: [] },
+      activity: [],
+      activityLoading: false,
+    })
+    const onClose = vi.fn()
+    render(<ActivityFeed isOpen onClose={onClose} />)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores Escape while closed', () => {
+    api.fetchActivity.mockResolvedValue({ activities: [], hasMore: false })
+    useBoardStore.setState({
+      board: { _id: 'b1', name: 'Board', statuses: [], tasks: [] },
+      activity: [],
+      activityLoading: false,
+    })
+    const onClose = vi.fn()
+    render(<ActivityFeed isOpen={false} onClose={onClose} />)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('calls fetchActivity with the before cursor on "Load more"', async () => {

@@ -102,6 +102,34 @@ describe('StatusManager', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
+  it('Escape closes the modal when focus is outside it', () => {
+    useBoardStore.setState({ board: makeBoard() })
+    const onClose = vi.fn()
+    render(<StatusManager isOpen onClose={onClose} />)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('Escape cancels a remove confirmation before closing', async () => {
+    const user = userEvent.setup()
+    useBoardStore.setState({ board: makeBoard() })
+    const onClose = vi.fn()
+    render(<StatusManager isOpen onClose={onClose} />)
+
+    await user.click(screen.getByRole('button', { name: 'Remove status: Backlog' }))
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('cannot remove a status with tasks', () => {
     useBoardStore.setState({
       board: makeBoard({
