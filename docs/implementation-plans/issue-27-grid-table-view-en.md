@@ -105,7 +105,7 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 ## 5. File Changes
 
 - **Modify** `client/src/App.jsx:13-19` — register exact Grid/Table routes before the board-root route.
-- **Modify** `client/src/lib/useView.js:7-13` — map exact paths to the four-view union without weakening 404 behavior.
+- **Modify** `client/src/lib/useView.js:7-13` — map exact paths to the kanban/grid/table union without weakening 404 behavior.
 - **Modify** `client/src/components/ViewSwitcher.jsx:7-39` — add two pills, preserve query strings and `aria-current`.
 - **Modify** `client/src/pages/BoardPage.jsx:1-119` — import and select Grid/Table while retaining the shared banner and `openTask`.
 - **Modify** `client/src/components/AddTaskButton.jsx:1-14` — only if an optional placement/style prop is needed; preserve current callers.
@@ -131,7 +131,7 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 
 ## 7. Edge Cases & Error Handling
 
-- **Unknown board sub-path:** only the four explicit board paths match; `/board/:boardId/unknown` remains `NotFoundPage`.
+- **Unknown board sub-path:** only the four explicit board paths (`/board/:boardId`, `/grid`, `/table`, and the task detail route) match; `/board/:boardId/unknown` remains `NotFoundPage`.
 - **Trailing slash or extra segment:** do not broaden `useView`; React Router's exact route behavior remains authoritative. If trailing slash normalization is required by the router, test it explicitly rather than treating arbitrary segments as Kanban.
 - **Board loading/not found/no statuses:** `BoardPage` retains its existing loading, `ErrorBanner`, and `EmptyBoard` branches. Views return `null` when no board is available and are not rendered when statuses are empty.
 - **No tasks:** Grid displays centered `Add your first task`; Table displays an accessible empty row and still provides its add affordance. A filtered zero-result list does not replace the shared `No tasks match` banner in `BoardPage`.
@@ -181,7 +181,7 @@ The UI calls neither endpoint directly. `BoardPage` calls `fetchBoard` via the s
 ### Existing regression tests
 
 - Extend `client/src/__tests__/routing.test.jsx:34-109` for both routes, active rendered views, and unknown sub-path 404 behavior.
-- Extend `client/src/__tests__/view-switcher.test.jsx:8-41` for four links, exact hrefs, order, active `aria-current`, and `?q=`/`?f=` retention.
+- Extend `client/src/__tests__/view-switcher.test.jsx:8-41` for the view links, exact hrefs, order, active `aria-current`, and `?q=`/`?f=` retention.
 - Keep all existing tests passing.
 - Run `npm test` (or the repository's configured Vitest command) and `npm run build --workspace=client`; verify `vite build` is clean.
 

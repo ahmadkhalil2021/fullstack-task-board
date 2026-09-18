@@ -131,7 +131,7 @@ Die UI ruft keinen dieser Endpunkte direkt auf. `BoardPage` ruft über den Store
 
 ## 7. Edge Cases & Error Handling
 
-- **Unbekannter Board-Subpfad:** Nur die vier expliziten Board-Pfade matchen; `/board/:boardId/unknown` bleibt `NotFoundPage`.
+- **Unbekannter Board-Subpfad:** Nur die vier expliziten Board-Pfade (`/board/:boardId`, `/grid`, `/table` und die Task-Detailroute) matchen; `/board/:boardId/unknown` bleibt `NotFoundPage`.
 - **Trailing Slash oder zusätzliches Segment:** `useView` nicht erweitern; das exakte React-Router-Verhalten bleibt maßgeblich. Falls der Router Trailing-Slash-Normalisierung benötigt, diese explizit testen, statt beliebige Segmente als Kanban zu behandeln.
 - **Board-Laden/nicht gefunden/keine Status:** Bestehende Loading-, `ErrorBanner`- und `EmptyBoard`-Branches in `BoardPage` behalten. Views geben bei fehlendem Board `null` zurück und werden bei leeren Status nicht gerendert.
 - **Keine Tasks:** Grid zeigt zentriert `Add your first task`; Table zeigt eine zugängliche Empty-Zeile und behält ihre Add-Möglichkeit. Ein gefiltertes Ergebnis von null ersetzt den gemeinsamen `No tasks match`-Banner in `BoardPage` nicht.
@@ -181,7 +181,7 @@ Die UI ruft keinen dieser Endpunkte direkt auf. `BoardPage` ruft über den Store
 ### Existing regression tests
 
 - `client/src/__tests__/routing.test.jsx:34-109` für beide Routen, aktive gerenderte Views und 404-Verhalten unbekannter Subpfade erweitern.
-- `client/src/__tests__/view-switcher.test.jsx:8-41` für vier Links, exakte hrefs, Reihenfolge, aktives `aria-current` und `?q=`/`?f=`-Erhalt erweitern.
+- `client/src/__tests__/view-switcher.test.jsx:8-41` für die View-Links, exakte hrefs, Reihenfolge, aktives `aria-current` und `?q=`/`?f=`-Erhalt erweitern.
 - Alle bestehenden Tests behalten.
 - `npm test` (oder den konfigurierten Vitest-Befehl) und `npm run build --workspace=client` ausführen; sicherstellen, dass `vite build` sauber ist.
 
