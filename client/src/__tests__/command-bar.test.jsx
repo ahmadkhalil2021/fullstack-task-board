@@ -149,6 +149,15 @@ describe('CommandBar — Odoo-style filter application', () => {
     expect(screen.getByText('Search: docs')).toBeInTheDocument()
   })
 
+  it('announces the matching task count to screen readers', () => {
+    renderBar()
+    const input = openBar()
+    fireEvent.change(input, { target: { value: 'login' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(screen.getByRole('status')).toHaveTextContent('2 tasks match')
+  })
+
   it('moves the active option with arrow keys and applies it on Enter', () => {
     renderBar()
     const input = openBar()

@@ -118,6 +118,11 @@ const CommandBar = () => {
     [board?.tasks, query]
   )
 
+  const filteredTasks = useMemo(
+    () => filterTasks(board?.tasks, query, filterStatus),
+    [board?.tasks, query, filterStatus]
+  )
+
   const counts = useMemo(() => {
     const map = new Map()
     queryMatchedTasks.forEach((task) =>
@@ -132,6 +137,8 @@ const CommandBar = () => {
   )
 
   if (!board) return null
+
+  const isFiltering = query !== '' || filterStatus !== null
 
   const options = trimmedDraft
     ? [{ id: 'command-bar-quick-search', type: 'search' }, ...statusOptions.map((option) => ({ ...option, type: 'status' }))]
@@ -255,8 +262,7 @@ const CommandBar = () => {
     <div
       ref={rootRef}
       className="relative"
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false)
+      onBlur={(event) => {        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false)
       }}
     >
       <div className="flex flex-wrap items-center gap-1 rounded-card border border-surface-border bg-surface-raised px-2 py-1.5 transition-colors duration-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
@@ -308,6 +314,11 @@ const CommandBar = () => {
           onKeyDown={handleKeyDown}
           className="min-w-[6rem] flex-1 bg-transparent text-sm text-surface-text placeholder:text-surface-text-subtle focus:outline-none"
         />
+        <span role="status" className="sr-only">
+          {isFiltering
+            ? `${filteredTasks.length} ${filteredTasks.length === 1 ? 'task' : 'tasks'} match`
+            : ''}
+        </span>
       </div>
 
       {isOpen && (
