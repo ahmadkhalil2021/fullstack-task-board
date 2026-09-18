@@ -211,3 +211,15 @@ npm run build --workspace=client
 - Welcher exakte Fallback-Text ist für einen Task ohne gültigen Timestamp gewünscht: `Updated recently`, `Updated just now` oder Auslassen?
 - Soll eine eingeklappte List-Sektion beim Filterwechsel eingeklappt bleiben oder sollen neu sichtbare Treffer-Sektionen automatisch aufgeklappt werden?
 - Soll der Section-Add-Button sichtbar bleiben, wenn seine Sektion leer und/oder eingeklappt ist? Dieser Plan nimmt für jeden Status ja an, auch für einen leeren Status ohne Header/Zeilen.
+
+---
+
+## Addendum — 2026-09-18 (Odoo-Liste + Task-Detailseite)
+
+Produkt-Follow-up nach UI-Review:
+
+- `ListView` rendert als Odoo-artige Tabelle: Spalten `Task | Status | Updated`, eine Gruppenzeile pro Status mit Aufklapp-Pfeil + Count und eine gruppenweise `+ Add a line`-Zeile. Tabellenlayout und Status-Spalte ersetzen die Karten-pro-Sektion-Optik.
+- Der `ViewSwitcher` ist rechts oberhalb des Inhalts ausgerichtet.
+- Das gemeinsame `TaskForm`-Modal wurde entfernt. Ein Klick auf eine Aufgabe in Kanban oder Liste (sowie das Anlegen aus beiden Ansichten) navigiert jetzt auf die dedizierte, voll bearbeitbare Seite `/board/:boardId/task/:taskId` (`client/src/pages/TaskDetailPage.jsx`): Name, Beschreibung, Icon, Status, Speicher-Feedback, Zwei-Schritt-Löschen, Angelegt/Aktualisiert-Meta und ein Zurück-Link, der die Herkunftsansicht + Filter über `location.state.from` erhält.
+- Die Row-Click-Akzeptanzkriterien bedeuten jetzt „öffnet die Task-Detailseite“.
+

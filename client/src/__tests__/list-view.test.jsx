@@ -1,4 +1,4 @@
-// __tests__/list-view.test.jsx — Grouping, collapse, rows, add actions and filter integration.
+// __tests__/list-view.test.jsx — Odoo-style grouping, collapse, rows, add actions and filters.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, within, fireEvent, act } from '@testing-library/react'
@@ -72,10 +72,17 @@ const renderBoardPage = (entry = '/board/b1/list') => {
     [
       { path: '/board/:boardId', element: <BoardPage /> },
       { path: '/board/:boardId/list', element: <BoardPage /> },
+      { path: '/board/:boardId/task/:taskId', element: <div>TASK PAGE</div> },
     ],
     { initialEntries: [entry] }
   )
   return render(<RouterProvider router={router} />)
+}
+
+// The toggle button controls a dedicated <tbody id="list-section-N">.
+const sectionFor = (status) => {
+  const toggle = screen.getByRole('button', { name: new RegExp(`^${status}`) })
+  return document.getElementById(toggle.getAttribute('aria-controls'))
 }
 
 beforeEach(() => {
@@ -83,32 +90,36 @@ beforeEach(() => {
   api.fetchActivity.mockResolvedValue({ activities: [], hasMore: false })
 })
 
-describe('ListView — grouping and rows', () => {
-  it('renders one section per status in board order', () => {
+describe('ListView — Odoo-style grouping and rows', () => {
+  it('renders one collapsible group per status in board order', () => {
     renderList()
-    const headings = screen
-      .getAllByRole('heading')
+    const groups = screen
+      .getAllByRole('button')
+      .filter((node) => node.getAttribute('aria-controls')?.startsWith('list-section-'))
       .map((node) => node.textContent.replace(/[^A-Za-z ]/g, '').trim())
-    expect(headings).toEqual(['Blocked', 'In Progress', 'Completed'])
+    expect(groups).toEqual(['Blocked', 'In Progress', 'Completed'])
   })
 
-  it('shows icon, name, relative time and chevron per row', () => {
+  it('shows icon, name, status, relative time and a row affordance', () => {
     renderList()
-    expect(screen.getByText('Doing A').closest('button')).toHaveAccessibleName(/Doing A.*Updated/)
+    expect(screen.getByText('Doing A').closest('button')).toHaveAccessibleName('Doing A')
     expect(screen.getAllByText(/^Updated .* ago$/)).toHaveLength(4)
     expect(screen.getAllByText('⏰')).toHaveLength(4)
+    expect(screen.getByRole('columnheader', { name: 'Task' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Updated' })).toBeInTheDocument()
+    expect(within(screen.getByText('Doing A').closest('tr')).getByText('In Progress')).toBeInTheDocument()
   })
 
-  it('orders rows within a section by order, not input order', () => {
+  it('orders rows within a group by order, not input order', () => {
     renderList()
-    const section = screen.getByRole('heading', { name: /In Progress/ }).closest('section')
-    const names = within(section)
+    const names = within(sectionFor('In Progress'))
       .getAllByText(/Doing A/)
       .map((node) => node.textContent)
     expect(names).toEqual(['Doing A2', 'Doing A'])
   })
 
-  it('is silent for empty statuses but keeps their add button', () => {
+  it('keeps empty statuses addable with a zero-count group', () => {
     resetStore({
       ...baseBoard,
       statuses: ['Blocked', 'Empty', 'Completed'],
@@ -116,13 +127,13 @@ describe('ListView — grouping and rows', () => {
     })
     render(<ListView onTaskClick={vi.fn()} />)
 
-    expect(screen.queryByRole('heading', { name: /^Empty/ })).not.toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: '+ Add new task' })).toHaveLength(3)
+    expect(screen.getByRole('button', { name: /^Empty/ })).toHaveTextContent('0')
+    expect(screen.getAllByRole('button', { name: '+ Add a line' })).toHaveLength(3)
   })
 
-  it('collapses and expands a section', () => {
+  it('collapses and expands a group', () => {
     renderList()
-    const toggle = screen.getByRole('button', { name: /In Progress/ })
+    const toggle = screen.getByRole('button', { name: /^In Progress/ })
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Doing A')).toBeVisible()
 
@@ -134,10 +145,14 @@ describe('ListView — grouping and rows', () => {
     expect(screen.getByText('Doing A')).toBeVisible()
   })
 
-  it('calls onTaskClick when a row is activated', () => {
+  it('calls onTaskClick once whether the name or the row is clicked', () => {
     const onTaskClick = renderList()
     fireEvent.click(screen.getByText('Doing A'))
+    expect(onTaskClick).toHaveBeenCalledTimes(1)
     expect(onTaskClick).toHaveBeenCalledWith(expect.objectContaining({ _id: 't1' }))
+
+    fireEvent.click(screen.getAllByText(/^Updated .* ago$/)[0])
+    expect(onTaskClick).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -150,7 +165,8 @@ describe('ListView — filter integration', () => {
 
     expect(screen.getByText('Blocked B')).toBeInTheDocument()
     expect(screen.queryByText('Doing A')).not.toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: /Completed/ })).not.toBeInTheDocument()
+    expect(screen.queryByText('Done C')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Completed/ })).toHaveTextContent('0')
   })
 
   it('shows the shared no-results banner and clears it from BoardPage', () => {
@@ -166,24 +182,23 @@ describe('ListView — filter integration', () => {
   })
 })
 
-describe('ListView — add and modal integration', () => {
-  it('creates a task with the section status and opens the task modal', async () => {
+describe('ListView — add and navigation integration', () => {
+  it('creates a task with the group status and opens its detail page', async () => {
     const created = makeTask({ _id: 'new-1', name: 'New Task', status: 'Completed', order: -1 })
     api.createTask.mockResolvedValue(created)
     renderBoardPage()
 
-    const section = screen.getByRole('heading', { name: /Completed/ }).closest('section')
-    fireEvent.click(within(section).getByRole('button', { name: '+ Add new task' }))
+    fireEvent.click(within(sectionFor('Completed')).getByRole('button', { name: '+ Add a line' }))
 
-    expect(await screen.findByRole('heading', { name: 'Edit task' })).toBeInTheDocument()
+    expect(await screen.findByText('TASK PAGE')).toBeInTheDocument()
     expect(api.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'Completed', parentBoardId: 'b1' })
     )
   })
 
-  it('opens the task modal when a row is clicked', async () => {
+  it('navigates to the task detail page when a row is clicked', () => {
     renderBoardPage()
     fireEvent.click(screen.getByText('Doing A'))
-    expect(await screen.findByRole('heading', { name: 'Edit task' })).toBeInTheDocument()
+    expect(screen.getByText('TASK PAGE')).toBeInTheDocument()
   })
 })

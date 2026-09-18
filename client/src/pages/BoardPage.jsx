@@ -2,29 +2,34 @@
 // "/board/:boardId/list" (List). Owns board loading, the shared header and
 // search, view selection, the filter banner and the task modal.
 
-import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import { useView } from '../lib/useView.js'
 import BoardHeader from '../components/BoardHeader.jsx'
+import ErrorBanner from '../components/ErrorBanner.jsx'
 import ViewSwitcher from '../components/ViewSwitcher.jsx'
 import KanbanBoard from '../views/KanbanBoard.jsx'
 import ListView from '../views/ListView.jsx'
-import TaskForm from '../components/TaskForm.jsx'
 import EmptyBoard from '../components/EmptyBoard.jsx'
 
 const BoardPage = () => {
   const { boardId } = useParams()
   const board = useBoardStore(s => s.board)
   const isLoading = useBoardStore(s => s.isLoading)
-  const error = useBoardStore(s => s.error)
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const query = useBoardStore(s => s.query)
   const filterStatus = useBoardStore(s => s.filterStatus)
   const clearSearch = useBoardStore(s => s.clearSearch)
   const view = useView()
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  const [editingTask, setEditingTask] = useState(null)
+  // Tasks open their dedicated page; `from` preserves the exact view + filters.
+  const openTask = (task) =>
+    navigate(`/board/${boardId}/task/${task._id}`, {
+      state: { from: location.pathname + location.search },
+    })
 
   useEffect(() => {
     if (board?._id !== boardId) {
@@ -66,20 +71,7 @@ const BoardPage = () => {
 
   return (
     <div className="min-h-screen bg-surface-subtle flex flex-col">
-      {error && (
-        <div role="alert" className="bg-danger-muted border-b border-danger-muted-strong text-danger-text">
-          <div className="flex items-center justify-between px-6 py-3">
-            <p>{error}</p>
-            <button
-              onClick={() => useBoardStore.getState().clearError()}
-              aria-label="Dismiss error"
-              className="min-h-[44px] min-w-[44px] p-3 flex items-center justify-center rounded hover:bg-danger-muted-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
+      <ErrorBanner />
 
       {!board ? (
         <EmptyBoard message="No board loaded" />
@@ -109,21 +101,17 @@ const BoardPage = () => {
             <EmptyBoard message="No columns defined for this board" />
           ) : (
             <>
-              <div className="px-4 sm:px-6 pt-4">
+              <div className="flex justify-end px-4 sm:px-6 pt-4">
                 <ViewSwitcher />
               </div>
               {view === 'list' ? (
                 <main className="flex-1 p-4 sm:p-6">
-                  <ListView onTaskClick={setEditingTask} />
+                  <ListView onTaskClick={openTask} />
                 </main>
               ) : (
-                <KanbanBoard onTaskClick={setEditingTask} />
+                <KanbanBoard onTaskClick={openTask} />
               )}
             </>
-          )}
-
-          {editingTask && (
-            <TaskForm task={editingTask} onClose={() => setEditingTask(null)} />
           )}
         </>
       )}

@@ -6,6 +6,7 @@ import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import HomePage from '../pages/HomePage.jsx'
 import BoardPage from '../pages/BoardPage.jsx'
+import TaskDetailPage from '../pages/TaskDetailPage.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
 import { useBoardStore } from '../store/useBoardStore.js'
 
@@ -35,6 +36,7 @@ const renderAt = (path) => {
   const router = createMemoryRouter(
     [
       { path: '/', element: <HomePage /> },
+      { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
       { path: '/board/:boardId/list', element: <BoardPage /> },
       { path: '/board/:boardId', element: <BoardPage /> },
       { path: '*', element: <NotFoundPage /> },
@@ -104,6 +106,26 @@ describe('routing', () => {
   it('renders NotFoundPage for unknown board sub-paths', () => {
     renderAt('/board/abc-123/unknown')
     expect(screen.getByText('404')).toBeInTheDocument()
+  })
+
+  it('renders the task detail page at /board/:boardId/task/:taskId', () => {
+    useBoardStore.setState({
+      board: {
+        _id: 'abc-123',
+        name: 'Test Board',
+        description: '',
+        statuses: ['A'],
+        tasks: [
+          { _id: 't1', name: 'T1', description: 'Desc', icon: '⏰', status: 'A' },
+        ],
+      },
+      activity: [],
+      activityLoading: false,
+      activityError: null,
+    })
+    renderAt('/board/abc-123/task/t1')
+    expect(screen.getByRole('heading', { name: 'Edit task' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('T1')).toBeInTheDocument()
   })
 })
 

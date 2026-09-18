@@ -3,7 +3,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route, useParams } from 'react-router-dom'
 import BoardPage from '../pages/BoardPage'
 import { useBoardStore } from '../store/useBoardStore'
 import * as api from '../lib/api.js'
@@ -16,7 +16,13 @@ vi.mock('../lib/api.js', () => ({
   updateTaskOrder: vi.fn(),
   deleteTask: vi.fn(),
   createTask: vi.fn(),
+  fetchActivity: vi.fn(),
 }))
+
+const TaskProbe = () => {
+  const { taskId } = useParams()
+  return <div>TASK PAGE {taskId}</div>
+}
 
 const BOARD_ID = 'board-123'
 
@@ -47,12 +53,14 @@ const renderBoard = () =>
     <MemoryRouter initialEntries={[`/board/${BOARD_ID}`]}>
       <Routes>
         <Route path="/board/:boardId" element={<BoardPage />} />
+        <Route path="/board/:boardId/task/:taskId" element={<TaskProbe />} />
       </Routes>
     </MemoryRouter>
   )
 
 beforeEach(() => {
   vi.clearAllMocks()
+  api.fetchActivity.mockResolvedValue({ activities: [], hasMore: false })
   useBoardStore.setState({ board: null, isLoading: false, error: null })
 })
 
@@ -115,7 +123,7 @@ describe('Add new task', () => {
     })
   })
 
-  it('opens the TaskForm modal with the name input focused', async () => {
+  it('navigates to the new task detail page after creating', async () => {
     const user = userEvent.setup()
     api.createTask.mockResolvedValue(createdTask)
     useBoardStore.setState({ board: makeBoard(), isLoading: false, error: null })
@@ -123,15 +131,10 @@ describe('Add new task', () => {
 
     await user.click(screen.getByRole('button', { name: '+ Add new task' }))
 
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('New Task')).toBeInTheDocument()
-    })
-    await waitFor(() => {
-      expect(document.activeElement).toBe(screen.getByDisplayValue('New Task'))
-    })
+    expect(await screen.findByText('TASK PAGE new-task')).toBeInTheDocument()
   })
 
-  it('rolls back the store and does not open the modal on API error', async () => {
+  it('rolls back the store and does not navigate on API error', async () => {
     const user = userEvent.setup()
     api.createTask.mockRejectedValue(new Error('Create failed'))
     useBoardStore.setState({ board: makeBoard(), isLoading: false, error: null })
@@ -143,7 +146,7 @@ describe('Add new task', () => {
       expect(useBoardStore.getState().board.tasks).toHaveLength(3)
     })
     expect(useBoardStore.getState().error).toBe('Create failed')
-    expect(screen.queryByDisplayValue('New Task')).not.toBeInTheDocument()
+    expect(screen.queryByText(/TASK PAGE/)).not.toBeInTheDocument()
   })
 
   it('guards against double-clicks — createTask is called once', () => {

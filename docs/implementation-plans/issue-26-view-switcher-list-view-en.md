@@ -211,3 +211,15 @@ npm run build --workspace=client
 - What exact fallback copy is desired for a task without a valid timestamp: `Updated recently`, `Updated just now`, or omission?
 - Should a collapsed List section stay collapsed when the user changes filters, or should newly visible matching sections expand automatically?
 - Should the section Add button remain visible when its section is empty and/or collapsed? This plan assumes yes for every status, including an empty status with no header/rows.
+
+---
+
+## Addendum — 2026-09-18 (Odoo list + task detail page)
+
+Product follow-up after UI review:
+
+- `ListView` renders as an Odoo-style table: `Task | Status | Updated` columns, one group row per status with caret + count, and a per-group `+ Add a line` row. The table layout and Status column replace the card-per-section look.
+- The `ViewSwitcher` is right-aligned above the content.
+- The shared `TaskForm` modal was removed. Clicking a task in Kanban or List (and creating one from either view) now navigates to the dedicated, fully editable page `/board/:boardId/task/:taskId` (`client/src/pages/TaskDetailPage.jsx`): name, description, icon, status, save feedback, two-step delete, created/updated meta, and a back link that preserves the originating view + filters via `location.state.from`.
+- The row-click acceptance criteria now mean “opens the task detail page”.
+

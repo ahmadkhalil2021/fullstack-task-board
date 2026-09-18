@@ -1,12 +1,11 @@
-// ListView.jsx — Read-oriented list grouped by status.
-// Sections follow board.statuses order, collapse locally, and share the
-// store filter (#25) and TaskForm with the Kanban view.
+// ListView.jsx — Odoo-style grouped table of tasks.
+// One collapsible group per status (board.statuses order) with an add-a-line
+// row; row clicks open the task detail page. Filtering comes from the store (#25).
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useBoardStore, filterTasks } from '../store/useBoardStore.js'
 import { formatRelativeTime } from '../lib/formatRelativeTime.js'
 import { statusColor } from '../lib/statusColor.js'
-import AddTaskButton from '../components/AddTaskButton.jsx'
 
 const ListView = ({ onTaskClick }) => {
   const board = useBoardStore(s => s.board)
@@ -57,81 +56,116 @@ const ListView = ({ onTaskClick }) => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {board.statuses.map((status, index) => {
-        const tasks = visibleTasks
-          .filter((t) => t.status === status)
-          .sort((a, b) => a.order - b.order)
-        const hasTasks = tasks.length > 0
-        const isCollapsed = collapsed.has(status)
-        const sectionId = `list-section-${index}`
+    <div className="overflow-hidden rounded-card border border-surface-border bg-surface-raised">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-surface-border text-left text-xs uppercase tracking-wide text-surface-text-subtle">
+            <th scope="col" className="px-4 py-2 font-medium">
+              Task
+            </th>
+            <th scope="col" className="px-4 py-2 font-medium">
+              Status
+            </th>
+            <th scope="col" className="px-4 py-2 text-right font-medium">
+              Updated
+            </th>
+            <th scope="col" className="w-8 px-2 py-2">
+              <span className="sr-only">Open</span>
+            </th>
+          </tr>
+        </thead>
 
-        return (
-          <section
-            key={status}
-            className="rounded-card border border-surface-border bg-surface-raised"
-          >
-            {hasTasks && (
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-surface-text-muted">
-                <button
-                  type="button"
-                  onClick={() => toggle(status)}
-                  aria-expanded={!isCollapsed}
-                  aria-controls={sectionId}
-                  className="flex w-full items-center gap-2 rounded-t-card px-4 py-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200 hover:bg-surface-muted"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`inline-block h-2 w-2 shrink-0 rounded-full bg-status-${statusColor(status)}`}
-                  />
-                  <span className="flex-1">{status}</span>
-                  <span className="rounded-full border border-surface-border bg-surface-muted px-2 py-0.5 text-xs text-surface-text-subtle">
-                    {tasks.length}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={`text-surface-text-subtle transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'}`}
-                  >
-                    ›
-                  </span>
-                </button>
-              </h2>
-            )}
+        {board.statuses.map((status, index) => {
+          const tasks = visibleTasks
+            .filter((t) => t.status === status)
+            .sort((a, b) => a.order - b.order)
+          const isCollapsed = collapsed.has(status)
+          const sectionId = `list-section-${index}`
 
-            {hasTasks && (
-              <ul id={sectionId} hidden={isCollapsed} className="border-t border-surface-border">
-                {tasks.map((task) => (
-                  <li key={task._id} className="border-b border-surface-border last:border-b-0">
+          return (
+            <Fragment key={status}>
+              <tbody>
+                <tr className="border-b border-surface-border bg-surface-muted/60">
+                  <th scope="colgroup" colSpan={4} className="p-0 text-left">
                     <button
                       type="button"
-                      onClick={() => onTaskClick(task)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset transition-colors duration-200"
+                      onClick={() => toggle(status)}
+                      aria-expanded={!isCollapsed}
+                      aria-controls={sectionId}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-left transition-colors duration-200 hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                     >
-                      <span aria-hidden="true" className="text-lg leading-none">
-                        {task.icon}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-surface-text">{task.name}</span>
-                      <span className="shrink-0 text-xs text-surface-text-subtle">
-                        Updated {formatRelativeTime(task.updatedAt ?? task.createdAt, now)}
-                      </span>
-                      <span aria-hidden="true" className="text-surface-text-subtle">
+                      <span
+                        aria-hidden="true"
+                        className={`text-xs text-surface-text-subtle transition-transform duration-200 ${isCollapsed ? '' : 'rotate-90'}`}
+                      >
                         ›
                       </span>
+                      <span className="font-semibold text-surface-text">{status}</span>
+                      <span className="rounded-full border border-surface-border bg-surface-raised px-2 py-0.5 text-xs text-surface-text-subtle">
+                        {tasks.length}
+                      </span>
                     </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+                  </th>
+                </tr>
+              </tbody>
 
-            <div className="px-3 pb-3 pt-3">
-              <AddTaskButton
-                onClick={() => handleAddTask(status)}
-                disabled={addingStatus === status}
-              />
-            </div>
-          </section>
-        )
-      })}
+              <tbody id={sectionId} hidden={isCollapsed}>
+                {tasks.map((task) => (
+                  <tr
+                    key={task._id}
+                    onClick={(event) => {
+                      // The inner button already handles activation; avoid a double call.
+                      if (event.target.closest('button')) return
+                      onTaskClick(task)
+                    }}
+                    className="cursor-pointer border-b border-surface-border transition-colors duration-200 hover:bg-surface-muted/50"
+                  >
+                    <td className="px-4 py-2">
+                      <button
+                        type="button"
+                        onClick={() => onTaskClick(task)}
+                        className="flex w-full items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                      >
+                        <span aria-hidden="true" className="text-lg leading-none">
+                          {task.icon}
+                        </span>
+                        <span className="min-w-0 truncate text-surface-text">{task.name}</span>
+                      </button>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2">
+                      <span className="inline-flex items-center gap-2 text-surface-text-muted">
+                        <span
+                          aria-hidden="true"
+                          className={`inline-block h-2 w-2 shrink-0 rounded-full bg-status-${statusColor(task.status)}`}
+                        />
+                        {task.status}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2 text-right text-xs text-surface-text-subtle">
+                      Updated {formatRelativeTime(task.updatedAt ?? task.createdAt, now)}
+                    </td>
+                    <td aria-hidden="true" className="px-2 py-2 text-right text-surface-text-subtle">
+                      ›
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  <td colSpan={4} className="p-0">
+                    <button
+                      type="button"
+                      onClick={() => handleAddTask(status)}
+                      disabled={addingStatus === status}
+                      className="w-full px-4 py-2 text-left text-sm text-primary transition-colors duration-200 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                    >
+                      + Add a line
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </Fragment>
+          )
+        })}
+      </table>
     </div>
   )
 }

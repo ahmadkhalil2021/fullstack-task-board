@@ -4,6 +4,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import HomePage from './pages/HomePage.jsx'
 import BoardPage from './pages/BoardPage.jsx'
+import TaskDetailPage from './pages/TaskDetailPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
 
 // createBrowserRouter is the modern React Router v6 API.
@@ -11,6 +12,7 @@ import NotFoundPage from './pages/NotFoundPage.jsx'
 // Routes are matched top-to-bottom; first match wins.
 const router = createBrowserRouter([
   { path: '/', element: <HomePage /> },
+  { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
   { path: '/board/:boardId/list', element: <BoardPage /> },
   { path: '/board/:boardId', element: <BoardPage /> },
   { path: '*', element: <NotFoundPage /> },
