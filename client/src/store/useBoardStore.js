@@ -46,6 +46,10 @@ const optimisticActivity = (boardId, fields) => ({
   ...fields,
 })
 
+// Per-task request sequence. Rapid successive updates (e.g. calendar moves)
+// can resolve out of order; only the newest response may touch the store.
+const taskUpdateSeq = new Map()
+
 export const useBoardStore = create((set, get) => ({
   board: null,
   isLoading: false,
@@ -179,9 +183,13 @@ export const useBoardStore = create((set, get) => ({
       }
     }
 
-    // Step 2: sync to API
+    // Step 2: sync to API. A newer update for the same task wins, so stale
+    // responses must neither overwrite nor roll back the newer optimistic state.
+    const seq = (taskUpdateSeq.get(taskId) ?? 0) + 1
+    taskUpdateSeq.set(taskId, seq)
     try {
       const task = await api.updateTask(taskId, data)
+      if (taskUpdateSeq.get(taskId) !== seq) return
       // Replace with the server's version (handles server-side defaults)
       set({
         board: {
@@ -190,7 +198,8 @@ export const useBoardStore = create((set, get) => ({
         },
       })
     } catch (err) {
-      // Step 3: rollback on failure
+      // Step 3: rollback on failure — unless a newer update superseded this one.
+      if (taskUpdateSeq.get(taskId) !== seq) return
       set({ board: previousBoard, error: err.message })
       throw err
     }

@@ -12,6 +12,7 @@ import ViewSwitcher from '../components/ViewSwitcher.jsx'
 import KanbanBoard from '../views/KanbanBoard.jsx'
 import GridView from '../views/GridView.jsx'
 import TableView from '../views/TableView.jsx'
+import CalendarView from '../views/CalendarView.jsx'
 import EmptyBoard from '../components/EmptyBoard.jsx'
 
 const BoardPage = () => {
@@ -111,6 +112,7 @@ const BoardPage = () => {
                 <main className="flex-1 p-4 sm:p-6">
                   {view === 'grid' && <GridView key={board._id} onTaskClick={openTask} />}
                   {view === 'table' && <TableView key={board._id} onTaskClick={openTask} />}
+                  {view === 'calendar' && <CalendarView key={board._id} onTaskClick={openTask} />}
                 </main>
               )}
             </>

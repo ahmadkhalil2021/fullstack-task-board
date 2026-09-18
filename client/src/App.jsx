@@ -15,6 +15,7 @@ const router = createBrowserRouter([
   { path: '/board/:boardId/task/:taskId', element: <TaskDetailPage /> },
   { path: '/board/:boardId/grid', element: <BoardPage /> },
   { path: '/board/:boardId/table', element: <BoardPage /> },
+  { path: '/board/:boardId/calendar', element: <BoardPage /> },
   { path: '/board/:boardId', element: <BoardPage /> },
   { path: '*', element: <NotFoundPage /> },
 ])
