@@ -133,10 +133,10 @@ const StatusManager = ({ isOpen, onClose }) => {
       }}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"
+        className="bg-surface-overlay rounded-card shadow-card-hover max-w-md w-full mx-4 p-6 max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="status-manager-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <h2 id="status-manager-title" className="text-lg font-semibold text-surface-text mb-4">
           Manage statuses
         </h2>
 
@@ -148,7 +148,7 @@ const StatusManager = ({ isOpen, onClose }) => {
             return (
               <li
                 key={`${status}-${index}`}
-                className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-900 rounded"
+                className="flex items-center gap-2 px-3 py-2 bg-surface-muted rounded border border-surface-border"
               >
                 {isEditing ? (
                   <>
@@ -169,7 +169,7 @@ const StatusManager = ({ isOpen, onClose }) => {
                           setEditingValue('')
                         }
                       }}
-                      className="flex-1 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="flex-1 px-2 py-1 bg-surface-raised border border-surface-border-strong rounded text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle"
                     />
                   </>
                 ) : (
@@ -177,12 +177,12 @@ const StatusManager = ({ isOpen, onClose }) => {
                     <button
                       type="button"
                       onClick={() => startEdit(index)}
-                      className="flex-1 text-left px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="flex-1 text-left px-2 py-1 rounded hover:bg-surface-raised text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
                     >
                       {status}
                     </button>
                     {count > 0 && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-surface-text-subtle">
                         {count} {count === 1 ? 'task' : 'tasks'}
                       </span>
                     )}
@@ -198,7 +198,7 @@ const StatusManager = ({ isOpen, onClose }) => {
                             : 'Cannot remove the last status'
                           : 'Remove status'
                       }
-                      className="min-h-[44px] min-w-[44px] p-2 rounded text-gray-500 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                      className="min-h-[44px] min-w-[44px] p-2 rounded text-surface-text-subtle hover:bg-danger-muted hover:text-danger disabled:cursor-not-allowed disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
                     >
                       🗑
                     </button>
@@ -212,13 +212,13 @@ const StatusManager = ({ isOpen, onClose }) => {
         <button
           type="button"
           onClick={addStatus}
-          className="w-full px-4 py-2 mb-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+          className="w-full px-4 py-2 mb-4 border-2 border-dashed border-surface-border-strong rounded text-surface-text-muted hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
         >
           + Add status
         </button>
 
         {error && (
-          <p role="alert" className="text-red-600 dark:text-red-400 text-sm mb-4">
+          <p role="alert" className="text-danger text-sm mb-4">
             {error}
           </p>
         )}
@@ -228,14 +228,14 @@ const StatusManager = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={cancelRemove}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="px-4 py-2 text-surface-text-muted hover:bg-surface-muted rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={confirmRemove}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors duration-150"
+              className="px-4 py-2 bg-danger text-white rounded hover:bg-danger-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               Remove
             </button>
@@ -245,7 +245,7 @@ const StatusManager = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="px-4 py-2 text-surface-text-muted hover:bg-surface-muted rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               Cancel
             </button>
@@ -253,7 +253,7 @@ const StatusManager = ({ isOpen, onClose }) => {
               type="button"
               onClick={save}
               disabled={saving}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors duration-150"
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               {saving ? 'Saving...' : 'Save'}
             </button>

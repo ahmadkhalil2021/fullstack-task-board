@@ -22,7 +22,7 @@ const ThemeToggle = () => {
       type="button"
       onClick={next}
       aria-label={`Theme: ${theme}`}
-      className="text-xl leading-none p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      className="text-xl leading-none p-2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded text-surface-text-muted hover:bg-surface-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
     >
       {ICONS[theme]}
     </button>

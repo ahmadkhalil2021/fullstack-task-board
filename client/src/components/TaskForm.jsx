@@ -1,6 +1,8 @@
 // TaskForm.jsx — Modal for editing a single task
 // Opens when a task is clicked. Edits all fields. Has Save, Cancel, and Delete.
 // The description textarea auto-grows to fit the content.
+// Delete uses a two-step inline confirm pattern instead of window.confirm so
+// it stays testable and doesn't break in iframes.
 
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '../store/useBoardStore.js'
@@ -29,7 +31,7 @@ const GrowingTextarea = ({ value, onChange, placeholder, minRows = 4 }) => {
       onChange={onChange}
       rows={minRows}
       placeholder={placeholder}
-      className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+      className="mt-1 w-full px-3 py-2 border border-surface-border-strong rounded bg-surface-raised text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle resize-none overflow-hidden transition-colors duration-200"
     />
   )
 }
@@ -44,6 +46,7 @@ const TaskForm = ({ task, onClose }) => {
   const [icon, setIcon] = useState(task.icon)
   const [status, setStatus] = useState(task.status)
   const [isSaving, setIsSaving] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const nameRef = useRef(null)
 
   useEffect(() => {
@@ -53,11 +56,17 @@ const TaskForm = ({ task, onClose }) => {
 
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        if (confirmingDelete) {
+          setConfirmingDelete(false)
+        } else {
+          onClose()
+        }
+      }
     }
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
-  }, [onClose])
+  }, [onClose, confirmingDelete])
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -70,13 +79,11 @@ const TaskForm = ({ task, onClose }) => {
   }
 
   const handleDelete = async () => {
-    if (window.confirm(`Delete "${task.name}"?`)) {
-      try {
-        await deleteTask(task._id)
-        onClose()
-      } catch {
-        // error already in store
-      }
+    try {
+      await deleteTask(task._id)
+      onClose()
+    } catch {
+      // error already in store
     }
   }
 
@@ -96,24 +103,24 @@ const TaskForm = ({ task, onClose }) => {
       onClick={handleBackdropClick}
       className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Edit task</h2>
+      <div className="bg-surface-overlay rounded-card shadow-card-hover w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-semibold text-surface-text mb-4">Edit task</h2>
 
         {/* Name */}
         <label className="block mb-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</span>
+          <span className="text-sm font-medium text-surface-text-muted">Name</span>
           <input
             ref={nameRef}
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-1 w-full px-3 py-2 border border-surface-border-strong rounded bg-surface-raised text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
           />
         </label>
 
         {/* Description — auto-growing textarea so the full text is visible */}
         <label className="block mb-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</span>
+          <span className="text-sm font-medium text-surface-text-muted">Description</span>
           <GrowingTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -124,14 +131,14 @@ const TaskForm = ({ task, onClose }) => {
 
         {/* Icon picker */}
         <div className="mb-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Icon</span>
+          <span className="text-sm font-medium text-surface-text-muted">Icon</span>
           <div className="mt-1 flex flex-wrap gap-1">
             {ICONS.map((i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setIcon(i)}
-                className={`text-2xl p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 ${i === icon ? 'bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500' : ''}`}
+                className={`text-2xl p-1 rounded hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200 ${i === icon ? 'bg-primary-muted ring-2 ring-primary' : ''}`}
               >
                 {i}
               </button>
@@ -141,11 +148,11 @@ const TaskForm = ({ task, onClose }) => {
 
         {/* Status */}
         <label className="block mb-4">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</span>
+          <span className="text-sm font-medium text-surface-text-muted">Status</span>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-1 w-full px-3 py-2 border border-surface-border-strong rounded bg-surface-raised text-surface-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
           >
             {statuses.map((s) => (
               <option key={s} value={s}>{s}</option>
@@ -154,19 +161,43 @@ const TaskForm = ({ task, onClose }) => {
         </label>
 
         {/* Actions */}
-        <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="text-red-500 hover:text-red-700 dark:hover:text-red-300 text-sm"
-          >
-            Delete
-          </button>
+        <div className="flex justify-between items-center pt-2 border-t border-surface-border">
+          {confirmingDelete ? (
+            <div className="flex items-center gap-2" data-testid="delete-confirm">
+              <span className="text-sm text-surface-text-muted">
+                Delete "{name}"?
+              </span>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="px-3 py-1 text-sm text-surface-text-muted hover:bg-surface-muted rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                data-testid="confirm-delete"
+                className="px-3 py-1 text-sm bg-danger text-white rounded hover:bg-danger-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              data-testid="request-delete"
+              className="text-danger hover:text-danger-hover text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle rounded px-2 py-1 transition-colors duration-200"
+            >
+              Delete
+            </button>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              className="px-4 py-2 text-sm text-surface-text-muted hover:bg-surface-muted rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               Cancel
             </button>
@@ -174,7 +205,7 @@ const TaskForm = ({ task, onClose }) => {
               type="button"
               onClick={handleSave}
               disabled={!hasChanges || isSaving || !name.trim()}
-              className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm bg-primary text-white rounded hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>

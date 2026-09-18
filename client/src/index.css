@@ -1,20 +1,59 @@
 /* Tailwind CSS — three directives are required for Tailwind to work */
-/* @tailwind base: applies Tailwind's preflight (CSS reset) */
-/* @tailwind components: registers Tailwind's component classes */
-/* @tailwind utilities: generates all utility classes used in the project */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens — swap with `.dark` class for dark mode parity */
+:root {
+  --surface-subtle: 249 250 251;   /* gray-50   — page bg */
+  --surface-muted: 243 244 246;    /* gray-100  — columns, skeletons */
+  --surface-raised: 255 255 255;   /* white     — cards, inputs */
+  --surface-overlay: 255 255 255;  /* white     — modals */
+  --surface-text: 17 24 39;        /* gray-900  — primary text */
+  --surface-text-muted: 75 85 99;  /* gray-600  — secondary text */
+  --surface-text-subtle: 107 114 128; /* gray-500 — tertiary text */
+  --surface-border: 229 231 235;   /* gray-200 — borders */
+  --surface-border-strong: 209 213 219; /* gray-300 — strong borders */
+  --primary: 59 130 246;           /* blue-500  */
+  --primary-hover: 37 99 235;      /* blue-600  */
+  --primary-muted: 219 234 254;    /* blue-100  */
+  --primary-muted-text: 30 64 175; /* blue-800  */
+  --danger: 220 38 38;             /* red-600   */
+  --danger-hover: 185 28 28;       /* red-700   */
+  --danger-text: 153 27 27;        /* red-800   — high-contrast text on muted bg */
+  --danger-muted: 254 226 226;     /* red-100   */
+  --danger-muted-strong: 254 202 202; /* red-200 */
+}
+
+.dark {
+  --surface-subtle: 3 7 18;        /* gray-950  */
+  --surface-muted: 17 24 39;       /* gray-900  */
+  --surface-raised: 31 41 55;      /* gray-800  */
+  --surface-overlay: 55 65 81;     /* gray-700  */
+  --surface-text: 243 244 246;     /* gray-100  */
+  --surface-text-muted: 209 213 219; /* gray-300 */
+  --surface-text-subtle: 156 163 175; /* gray-400 */
+  --surface-border: 55 65 81;      /* gray-700 */
+  --surface-border-strong: 75 85 99; /* gray-600 */
+  --primary: 96 165 250;           /* blue-400  */
+  --primary-hover: 59 130 246;     /* blue-500  */
+  --primary-muted: 30 58 138;      /* blue-900  */
+  --primary-muted-text: 147 197 253; /* blue-300 */
+  --danger: 248 113 113;           /* red-400   */
+  --danger-hover: 239 68 68;       /* red-500   */
+  --danger-text: 254 226 226;      /* red-100   — high-contrast text on muted bg */
+  --danger-muted: 127 29 29;       /* red-900   */
+  --danger-muted-strong: 153 27 27; /* red-800 */
+}
+
 /* Completely hide scrollbar but keep scrolling functional */
 .scrollbar-hide {
-  scrollbar-width: none;       /* Firefox */
-  -ms-overflow-style: none;    /* IE/Edge legacy */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;               /* Chrome/Safari/Opera */
+  display: none;
   width: 0;
   height: 0;
 }

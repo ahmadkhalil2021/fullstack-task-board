@@ -116,20 +116,20 @@ const BoardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+      <div className="min-h-screen bg-surface-subtle flex flex-col">
         <div className="flex gap-4 p-6 overflow-x-auto" aria-hidden="true">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="flex flex-col rounded-lg p-3 min-w-[280px] flex-1 bg-gray-100 dark:bg-gray-900 animate-pulse"
+              className="flex flex-col rounded-card p-3 min-w-[280px] flex-1 bg-surface-muted animate-pulse"
             >
               <div className="flex items-center justify-between px-2 py-1 mb-2">
-                <div className="h-4 w-24 rounded bg-gray-300 dark:bg-gray-700" />
-                <div className="h-5 w-8 rounded-full bg-gray-300 dark:bg-gray-700" />
+                <div className="h-4 w-24 rounded bg-surface-border-strong" />
+                <div className="h-5 w-8 rounded-full bg-surface-border-strong" />
               </div>
               <div className="flex flex-col gap-2">
-                <div className="h-32 rounded-md bg-gray-200 dark:bg-gray-800" />
-                <div className="h-32 rounded-md bg-gray-200 dark:bg-gray-800" />
+                <div className="h-24 rounded-card bg-surface-border" />
+                <div className="h-24 rounded-card bg-surface-border" />
               </div>
             </div>
           ))}
@@ -139,15 +139,15 @@ const BoardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-surface-subtle flex flex-col">
       {error && (
-        <div role="alert" className="bg-red-100 dark:bg-red-900 border-b border-red-300 dark:border-red-700 px-6 py-3 text-red-800 dark:text-red-100">
-          <div className="flex items-center justify-between">
+        <div role="alert" className="bg-danger-muted border-b border-danger-muted-strong text-danger-text">
+          <div className="flex items-center justify-between px-6 py-3">
             <p>{error}</p>
             <button
               onClick={() => useBoardStore.getState().clearError()}
               aria-label="Dismiss error"
-              className="min-h-[44px] min-w-[44px] p-3 flex items-center justify-center rounded hover:bg-red-200 dark:hover:bg-red-800"
+              className="min-h-[44px] min-w-[44px] p-3 flex items-center justify-center rounded hover:bg-danger-muted-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-surface-subtle transition-colors duration-200"
             >
               ×
             </button>
