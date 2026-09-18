@@ -232,6 +232,7 @@ const TaskDetailForm = ({ task, backTo }) => {
 const TaskDetailPage = () => {
   const { boardId, taskId } = useParams()
   const board = useBoardStore(s => s.board)
+  const isLoading = useBoardStore(s => s.isLoading)
   const error = useBoardStore(s => s.error)
   const fetchBoard = useBoardStore(s => s.fetchBoard)
   const location = useLocation()
@@ -245,7 +246,11 @@ const TaskDetailPage = () => {
     }
   }, [boardId, board?._id, fetchBoard])
 
-  if (!board) {
+  // A board from a previous navigation must not leak into this page while the
+  // target board is still loading.
+  const isBoardReady = board?._id === boardId && !isLoading
+
+  if (!isBoardReady) {
     return (
       <div className="min-h-screen bg-surface-subtle flex flex-col">
         <ErrorBanner />
@@ -256,7 +261,7 @@ const TaskDetailPage = () => {
           >
             ← Back to board
           </Link>
-          {error ? (
+          {error && !isLoading ? (
             <div
               role="status"
               className="mt-4 rounded-card border border-surface-border bg-surface-raised px-4 py-3 text-sm text-surface-text-muted"

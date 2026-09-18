@@ -135,6 +135,32 @@ describe('TaskDetailPage', () => {
     expect(await screen.findByText(/the link may be invalid/)).toBeInTheDocument()
   })
 
+  it('does not leak tasks from a previous board while the target board loads', async () => {
+    let resolveFetch
+    api.fetchBoard.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        })
+    )
+    const otherBoard = {
+      _id: 'b2',
+      name: 'Other board',
+      description: '',
+      statuses: ['In Progress'],
+      tasks: [{ ...task, name: 'Wrong board task' }],
+    }
+    renderDetail({ entry: '/board/b1/task/t1', storeBoard: otherBoard })
+
+    expect(screen.getByText('Loading task...')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('Wrong board task')).not.toBeInTheDocument()
+
+    await act(async () => {
+      resolveFetch(board)
+    })
+    expect(await screen.findByDisplayValue('Fix login')).toBeInTheDocument()
+  })
+
   it('resets the form when navigating to another task', async () => {
     const user = userEvent.setup()
     const { router } = renderDetail()
